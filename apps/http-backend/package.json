@@ -17,6 +17,7 @@
   "type": "commonjs",
   "description": "",
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "@repo/db": "workspace:*"
   }
 }
