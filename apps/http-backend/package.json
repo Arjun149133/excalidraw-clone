@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/db": "workspace:*",
     "express": "^4.21.2"
   },
   "keywords": [],
@@ -17,7 +18,6 @@
   "type": "commonjs",
   "description": "",
   "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@repo/db": "workspace:*"
+    "@types/express": "^5.0.0"
   }
 }

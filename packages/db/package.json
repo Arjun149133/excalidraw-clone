@@ -9,6 +9,7 @@
     "@prisma/client": "^6.2.1"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "prisma": "^6.2.1"
   },
   "exports": {

@@ -1,5 +1,3 @@
-import { PrismaClient } from "@repo/db/client";
+import { prismaClient } from "@repo/db/client";
 
-const client = new PrismaClient();
-
-export default client;
+export default prismaClient;

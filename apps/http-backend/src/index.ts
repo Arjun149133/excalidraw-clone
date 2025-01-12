@@ -3,12 +3,16 @@ import db from "./db";
 
 const app = express();
 
+app.use(express.json());
+
 app.get("/create-user", async (req, res) => {
   const random = Math.floor(Math.random() * 100);
 
   await db.user.create({
     data: {
       name: "arjun@" + random,
+      email: "something@gmail.com",
+      password: "password@" + random,
     },
   });
 
