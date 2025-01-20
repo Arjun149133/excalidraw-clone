@@ -2,11 +2,25 @@ import { Request, Response } from "express";
 import db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { User } from "@repo/common/types";
+
+//TODO: name route
 
 const registerHandler = async (req: Request, res: Response) => {
   try {
     const { email, password } = await req.body;
-    //TODO: zod package here
+    const userShcema = User.safeParse({
+      email: email,
+      password: password,
+    });
+
+    if (!userShcema.success) {
+      res.status(400).json({
+        message: "Invalid input",
+      });
+      return;
+    }
+
     const existingUser = await db.user.findFirst({
       where: {
         email: email,
@@ -40,6 +54,18 @@ const registerHandler = async (req: Request, res: Response) => {
 const loginHandler = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    const userShcema = User.safeParse({
+      email: email,
+      password: password,
+    });
+
+    if (!userShcema.success) {
+      res.status(400).json({
+        message: "Invalid input",
+      });
+      return;
+    }
+
     const user = await db.user.findFirst({
       where: {
         email: email,
@@ -61,7 +87,6 @@ const loginHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    //TODO: common package
     const token = jwt.sign(
       {
         userId: user.id,

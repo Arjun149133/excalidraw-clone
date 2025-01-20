@@ -1,10 +1,20 @@
 import { Request, Response } from "express";
 import db from "../db";
+import { Room } from "@repo/common/types";
 
 const createRoomHandler = async (req: Request, res: Response) => {
   try {
     const { name } = await req.body;
-    //TODO: zod package here
+    const roomSchema = Room.safeParse({
+      name: name,
+    });
+
+    if (!roomSchema.success) {
+      res.status(400).json({
+        message: "Invalid input",
+      });
+      return;
+    }
 
     const existingRoom = await db.room.findFirst({
       where: {
