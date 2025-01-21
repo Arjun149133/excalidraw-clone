@@ -17,6 +17,7 @@ const registerHandler = async (req: Request, res: Response) => {
     if (!userShcema.success) {
       res.status(400).json({
         message: "Invalid input",
+        err: userShcema.error.errors,
       });
       return;
     }
@@ -62,6 +63,7 @@ const loginHandler = async (req: Request, res: Response) => {
     if (!userShcema.success) {
       res.status(400).json({
         message: "Invalid input",
+        err: userShcema.error.errors,
       });
       return;
     }

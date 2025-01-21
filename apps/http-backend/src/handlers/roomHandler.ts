@@ -12,6 +12,7 @@ const createRoomHandler = async (req: Request, res: Response) => {
     if (!roomSchema.success) {
       res.status(400).json({
         message: "Invalid input",
+        err: roomSchema.error.errors,
       });
       return;
     }

@@ -9,10 +9,8 @@ interface User {
   roomIds: string[];
 }
 
-interface Room {
-  roomId: string;
-  users: User[];
-}
+const roomMapping = new Map<string, User[]>();
+const users: User[] = [];
 
 function findUserId(token: string): string | null {
   try {
@@ -32,9 +30,6 @@ function findUserId(token: string): string | null {
   }
 }
 
-const userToRoomMap = new Map<string, Room[]>();
-const roomToUserMap = new Map<string, User[]>();
-
 wss.on("connection", (ws, req) => {
   ws.on("error", () => {
     console.error;
@@ -53,31 +48,68 @@ wss.on("connection", (ws, req) => {
     return;
   }
 
-  const user: User = {
-    ws,
-    userId,
-    roomIds: [],
-  };
-  userToRoomMap.set(userId, []);
+  const user: User = { ws, userId, roomIds: [] };
+
+  users.push(user);
 
   ws.on("message", (message) => {
     const data = JSON.parse(message.toString());
-    if (data.type === "join") {
-      const roomId = data.payload.roomId;
-      if (!roomId) return;
+    console.log(data);
 
-      let room = roomToUserMap.get(roomId);
-      if (!room) {
-        roomToUserMap.set(roomId, []);
+    if (data.type === "join_room") {
+      const roomId = data.roomId;
+      if (!roomId || typeof roomId !== "string") {
+        return;
       }
-      ws.send(
-        JSON.stringify({
-          type: "join_success",
-          payload: {
-            roomId,
-          },
-        })
-      );
+      let room = roomMapping.get(roomId);
+      if (!room) {
+        roomMapping.set(roomId, []);
+        room = roomMapping.get(roomId);
+      }
+      const u = room?.find((u) => u.userId === userId);
+      if (u) {
+        return;
+      }
+      room?.push(user);
+      user.roomIds.push(roomId);
+      room?.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "joined_room",
+            payload: {
+              userId: userId,
+            },
+          })
+        );
+      });
+    }
+
+    if (data.type === "leave_room") {
+      const roomId = data.roomId;
+      let room = roomMapping.get(roomId);
+      if (!room) {
+        return;
+      }
+
+      const newRoom = room.filter((u) => u.userId !== userId);
+
+      roomMapping.delete(roomId);
+      roomMapping.set(roomId, newRoom);
+
+      room = roomMapping.get(roomId);
+      room?.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "left_room",
+            payload: {
+              userId: userId,
+            },
+          })
+        );
+      });
+    }
+
+    if (data.type === "chat") {
     }
   });
 });
