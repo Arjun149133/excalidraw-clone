@@ -1,0 +1,19 @@
+{
+  "name": "@repo/tailwind-config",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "exports": {
+    ".": "./tailwind.config.ts"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace: *",
+    "tailwindcss": "^3.4.17"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
