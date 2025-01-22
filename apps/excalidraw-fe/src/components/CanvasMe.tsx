@@ -1,5 +1,7 @@
 "use client";
+import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./ui/button";
 
 type Shape = {
   x: number;
@@ -11,6 +13,14 @@ type Shape = {
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.onmessage = (msg) => {
+      console.log("msg received: ", msg);
+    };
+  }, [socket]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
@@ -99,7 +109,23 @@ const Canvas = () => {
     };
   }, [canvasRef, shapes]);
 
-  return <canvas ref={canvasRef}></canvas>;
+  return (
+    <div>
+      <canvas ref={canvasRef}></canvas>
+      <Button
+        onClick={() => {
+          socket?.send(
+            JSON.stringify({
+              type: "join_room",
+              roomId: "2",
+            })
+          );
+        }}
+      >
+        join room
+      </Button>
+    </div>
+  );
 };
 
 export default Canvas;

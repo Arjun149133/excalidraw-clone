@@ -110,6 +110,27 @@ wss.on("connection", (ws, req) => {
     }
 
     if (data.type === "chat") {
+      const roomId = data.roomId;
+      let room = roomMapping.get(roomId);
+      if (!room) {
+        return;
+      }
+
+      if (!data.payload || !data.payload.shape || !data.payload.params) {
+        return;
+      }
+
+      room.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "chat",
+            payload: {
+              shape: data.payload.shape,
+              params: data.payload.params,
+            },
+          })
+        );
+      });
     }
   });
 });

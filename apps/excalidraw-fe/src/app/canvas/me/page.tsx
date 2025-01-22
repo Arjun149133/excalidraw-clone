@@ -1,4 +1,4 @@
-import Canvas from "@/components/Canvas";
+import Canvas from "@/components/CanvasMe";
 import { Button } from "@/components/ui/button";
 import {
   CircleIcon,
