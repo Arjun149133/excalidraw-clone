@@ -46,6 +46,31 @@ const createRoomHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const getRoomChats = async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.params;
+
+    if (!roomId) {
+      res.status(400).json({
+        msg: "no roomId provided",
+      });
+      return;
+    }
+
+    const existingChats = await db.chat.findMany({
+      where: {
+        roomId: parseInt(roomId),
+      },
+    });
+
+    res.status(200).json({
+      existingChats: existingChats,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const deleteRoomHandler = async (req: Request, res: Response) => {
   try {
     const data = await req.body;

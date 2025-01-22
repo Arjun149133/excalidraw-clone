@@ -1,5 +1,7 @@
 import { WebSocket, WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
+import { getUser } from "./db/auth";
+import db from "./db/index";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -30,7 +32,7 @@ function findUserId(token: string): string | null {
   }
 }
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", async (ws, req) => {
   ws.on("error", () => {
     console.error;
   });
@@ -48,11 +50,17 @@ wss.on("connection", (ws, req) => {
     return;
   }
 
+  const userInDb = await getUser(userId);
+  if (!userInDb) {
+    ws.close();
+    return;
+  }
+
   const user: User = { ws, userId, roomIds: [] };
 
   users.push(user);
 
-  ws.on("message", (message) => {
+  ws.on("message", async (message) => {
     const data = JSON.parse(message.toString());
     console.log(data);
 
@@ -110,27 +118,41 @@ wss.on("connection", (ws, req) => {
     }
 
     if (data.type === "chat") {
-      const roomId = data.roomId;
-      let room = roomMapping.get(roomId);
-      if (!room) {
-        return;
-      }
+      try {
+        const roomId = data.roomId;
+        let room = roomMapping.get(roomId);
+        if (!room) {
+          return;
+        }
 
-      if (!data.payload || !data.payload.shape || !data.payload.params) {
-        return;
-      }
+        if (!data.payload || !data.payload.shape || !data.payload.params) {
+          return;
+        }
 
-      room.forEach((u) => {
-        u.ws.send(
-          JSON.stringify({
-            type: "chat",
-            payload: {
-              shape: data.payload.shape,
-              params: data.payload.params,
-            },
-          })
-        );
-      });
+        const chat = await db.chat.create({
+          data: {
+            roomId: parseInt(roomId),
+            message: JSON.stringify(data.payload),
+            userId: userId,
+          },
+        });
+
+        console.log(chat);
+
+        room.forEach((u) => {
+          u.ws.send(
+            JSON.stringify({
+              type: "chat",
+              payload: {
+                shape: data.payload.shape,
+                params: data.payload.params,
+              },
+            })
+          );
+        });
+      } catch (error) {
+        console.error(error);
+      }
     }
   });
 });

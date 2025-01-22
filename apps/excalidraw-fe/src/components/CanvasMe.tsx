@@ -2,6 +2,7 @@
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
+import { getExistingShapes } from "@/draw/http";
 
 type Shape = {
   x: number;
@@ -16,9 +17,19 @@ const Canvas = () => {
   const socket = useSocket();
 
   useEffect(() => {
+    getExistingShapes("2").then((result) => {
+      const { existingChats } = result;
+      const res = JSON.parse(existingChats[0].message).params;
+      console.log(res);
+
+      setShapes((s) => [...s, { x: res.x, y: res.y, w: res.w, h: res.h }]);
+    });
+  }, []);
+
+  useEffect(() => {
     if (!socket) return;
     socket.onmessage = (msg) => {
-      console.log("msg received: ", msg);
+      console.log("message received:", msg);
     };
   }, [socket]);
 
