@@ -62,7 +62,7 @@ wss.on("connection", async (ws, req) => {
 
   ws.on("message", async (message) => {
     const data = JSON.parse(message.toString());
-    console.log(data);
+    console.log("herererer: ", data);
 
     if (data.type === "join_room") {
       const roomId = data.roomId;
@@ -74,10 +74,12 @@ wss.on("connection", async (ws, req) => {
         roomMapping.set(roomId, []);
         room = roomMapping.get(roomId);
       }
-      const u = room?.find((u) => u.userId === userId);
-      if (u) {
-        return;
-      }
+
+      // const u = room?.find((u) => u.userId === userId);
+      // if (u) {
+      //   console.log("user exists already in this room");
+      //   return;
+      // }
       room?.push(user);
       user.roomIds.push(roomId);
       room?.forEach((u) => {
@@ -122,10 +124,12 @@ wss.on("connection", async (ws, req) => {
         const roomId = data.roomId;
         let room = roomMapping.get(roomId);
         if (!room) {
+          console.log("returning no room");
           return;
         }
 
         if (!data.payload || !data.payload.shape || !data.payload.params) {
+          console.log("returning no data payload");
           return;
         }
 
@@ -136,13 +140,14 @@ wss.on("connection", async (ws, req) => {
             userId: userId,
           },
         });
-
         console.log(chat);
 
         room.forEach((u) => {
+          console.log(u.userId);
           u.ws.send(
             JSON.stringify({
               type: "chat",
+              roomId: roomId,
               payload: {
                 shape: data.payload.shape,
                 params: data.payload.params,

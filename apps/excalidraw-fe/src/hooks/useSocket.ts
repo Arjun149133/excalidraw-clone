@@ -5,17 +5,23 @@ export const token =
 
 const url = `ws://localhost:8080/?token=${token}`;
 
-export const useSocket = () => {
+export const useSocket = (roomId: string) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
     if (socket) return;
 
     const ws = new WebSocket(url);
-    console.log("heelo");
+    console.log("heelo:", roomId);
 
     ws.onopen = () => {
       setSocket(ws);
+      ws.send(
+        JSON.stringify({
+          type: "join_room",
+          roomId: roomId,
+        })
+      );
       console.log("connection made");
     };
 

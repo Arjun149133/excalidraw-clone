@@ -2,24 +2,30 @@ import { getExistingShapes } from "./http";
 
 export type Shape =
   | {
-      type: "rect";
-      x: number;
-      y: number;
-      w: number;
-      h: number;
+      shape: "rect";
+      params: {
+        startX: number;
+        startY: number;
+        width: number;
+        height: number;
+      };
     }
   | {
-      type: "circle";
-      x: number;
-      y: number;
-      r: number;
+      shape: "circle";
+      params: {
+        x: number;
+        y: number;
+        radius: number;
+      };
     }
   | {
-      type: "line";
-      startX: number;
-      startY: number;
-      endX: number;
-      endY: number;
+      shape: "line";
+      params: {
+        startX: number;
+        startY: number;
+        endX: number;
+        endY: number;
+      };
     };
 
 export class Game {
@@ -29,9 +35,9 @@ export class Game {
   private startY: number = 0;
   private clicked: boolean = false;
   private ctx: CanvasRenderingContext2D;
-  private shapes: Shape[] = [];
+  // private shapes: Shape[] = [];
   private socket: WebSocket;
-  private existingShapes: any;
+  private existingShapes: Shape[] = [];
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -41,19 +47,35 @@ export class Game {
     this.clear();
     this.init();
     this.initMouseHandlers();
+    this.initSocketHandler();
   }
 
   async init() {
     try {
       const result = await getExistingShapes(this.roomId);
       const { existingChats } = result;
-      this.existingShapes = existingChats;
+      existingChats.map((s: any) => {
+        let shape: Shape = JSON.parse(s.message);
+        this.existingShapes.push(shape);
+      });
       console.log(this.existingShapes);
 
       this.clear();
     } catch (error) {
       console.error(error);
     }
+  }
+
+  initSocketHandler() {
+    console.log("initsockethandler");
+    this.socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("whynot:,", data);
+
+      if (data.type === "chat") {
+        console.log(data);
+      }
+    };
   }
 
   initMouseHandlers() {
@@ -94,6 +116,16 @@ export class Game {
     this.ctx.strokeStyle = "#ffffff";
     this.ctx.strokeRect(this.startX, this.startY, w, h);
 
+    this.existingShapes.push({
+      shape: "rect",
+      params: {
+        startX: this.startX,
+        startY: this.startY,
+        width: w,
+        height: h,
+      },
+    });
+
     this.socket.send(
       JSON.stringify({
         type: "chat",
@@ -101,10 +133,10 @@ export class Game {
         payload: {
           shape: "rect",
           params: {
-            x: this.startX,
-            y: this.startY,
-            w: w,
-            h: h,
+            startX: this.startX,
+            startY: this.startY,
+            width: w,
+            height: h,
           },
         },
       })
@@ -120,9 +152,13 @@ export class Game {
     this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     this.ctx.fillStyle = "rgba(0, 0, 0)";
     this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    if (this.shapes) {
-      this.shapes.forEach((s) => {
-        this.ctx.strokeStyle = "#ffffff";
+    if (this.existingShapes) {
+      this.existingShapes.forEach((s) => {
+        if (s.shape === "rect") {
+          const { startX, startY, width, height } = s.params;
+          this.ctx.strokeStyle = "#ffffff";
+          this.ctx.strokeRect(startX, startY, width, height);
+        }
       });
     }
   };
