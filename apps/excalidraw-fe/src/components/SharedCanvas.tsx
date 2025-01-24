@@ -1,6 +1,7 @@
 "use client";
 
-import { Game, Tool } from "@/draw/Game";
+import { Game } from "@/draw/Game";
+import { Tool } from "@/utils/types";
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";

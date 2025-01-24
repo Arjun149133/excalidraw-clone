@@ -1,55 +1,33 @@
-import { getExistingShapes } from "./http";
 import { Shape, Tool } from "@/utils/types";
 
-export class Game {
+export class Offline {
   private canvas: HTMLCanvasElement;
-  private roomId: string;
   private startX: number = 0;
   private startY: number = 0;
   private clicked: boolean = false;
   private ctx: CanvasRenderingContext2D;
-  private socket: WebSocket;
   private existingShapes: Shape[] = [];
   private selectedTool: Tool = "rect";
 
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
+  constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.roomId = roomId;
-    this.socket = socket;
     this.ctx = this.canvas.getContext("2d")!;
     this.clear();
     this.init();
     this.initMouseHandlers();
-    this.initSocketHandler();
   }
 
   async init() {
-    try {
-      const result = await getExistingShapes(this.roomId);
-      const { existingChats } = result;
-      existingChats.map((s: any) => {
-        let shape: Shape = JSON.parse(s.message);
-        this.existingShapes.push(shape);
-      });
-      console.log(this.existingShapes);
-
-      this.clear();
-    } catch (error) {
-      console.error(error);
+    const shapesString = localStorage.getItem("existingShapes");
+    if (!shapesString) {
+      localStorage.setItem("existingShapes", JSON.stringify([]));
+      return;
     }
-  }
 
-  initSocketHandler() {
-    this.socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "chat") {
-        const shape: Shape = data.payload;
-
-        this.existingShapes.push(shape);
-        this.clear();
-      }
-    };
+    const shapes: Shape[] = JSON.parse(shapesString);
+    this.existingShapes = shapes;
+    console.log(this.existingShapes);
+    this.clear();
   }
 
   initMouseHandlers() {
@@ -132,22 +110,6 @@ export class Game {
         });
 
         this.clear();
-
-        this.socket.send(
-          JSON.stringify({
-            type: "chat",
-            roomId: this.roomId,
-            payload: {
-              shape: "rect",
-              params: {
-                startX: this.startX,
-                startY: this.startY,
-                width: w,
-                height: h,
-              },
-            },
-          })
-        );
         break;
 
       case "circle":
@@ -162,21 +124,6 @@ export class Game {
         });
 
         this.clear();
-
-        this.socket.send(
-          JSON.stringify({
-            type: "chat",
-            roomId: this.roomId,
-            payload: {
-              shape: "circle",
-              params: {
-                startX: this.startX,
-                startY: this.startY,
-                radius: radius,
-              },
-            },
-          })
-        );
 
         break;
 
@@ -193,27 +140,14 @@ export class Game {
 
         this.clear();
 
-        this.socket.send(
-          JSON.stringify({
-            type: "chat",
-            roomId: this.roomId,
-            payload: {
-              shape: "line",
-              params: {
-                startX: this.startX,
-                startY: this.startY,
-                endX: e.clientX,
-                endY: e.clientY,
-              },
-            },
-          })
-        );
-
         break;
 
       default:
         break;
     }
+
+    localStorage.removeItem("existingShapes");
+    localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
   };
 
   handleMouseLeave = (e: MouseEvent) => {

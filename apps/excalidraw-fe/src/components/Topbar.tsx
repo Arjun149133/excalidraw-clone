@@ -5,7 +5,7 @@ import {
   RectangleHorizontalIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Tool } from "@/draw/Game";
+import { Tool } from "@/utils/types";
 
 const shapeButtons = [
   {
@@ -41,7 +41,7 @@ export default function Topbar({
           onClick={() => {
             setSelectedTool(s.tool);
           }}
-          className=" bg-gray-700 hover:bg-gray-600 "
+          className={` bg-gray-700 hover:bg-gray-600 ${selectedTool === s.tool ? "bg-gray-500" : ""}`}
         >
           <s.icon />
         </Button>

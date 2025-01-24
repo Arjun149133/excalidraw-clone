@@ -1,111 +1,41 @@
 "use client";
-import { useSocket } from "@/hooks/useSocket";
+import { Offline } from "@/draw/Offline";
+import { Tool } from "@/utils/types";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "./ui/button";
-import { getExistingShapes } from "@/draw/http";
-
-type Shape = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-};
+import Topbar from "./Topbar";
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [offline, setOffline] = useState<Offline>();
+  const [selectedTool, setSelectedTool] = useState<Tool>("rect");
 
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) {
-      return;
-    }
+    console.log("se:,", selectedTool);
+    offline?.setTool(selectedTool);
+  }, [selectedTool]);
 
-    let startX = 0;
-    let startY = 0;
-    let clicked = false;
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const o = new Offline(canvasRef.current);
 
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-    };
-
-    const handleMouseDown = (e: MouseEvent) => {
-      startX = e.clientX;
-      startY = e.clientY;
-      clicked = true;
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (clicked) {
-        const width = e.clientX - startX;
-        const hei = e.clientY - startY;
-
-        clear();
-        ctx.strokeStyle = "#ffffff";
-        ctx.strokeRect(startX, startY, width, hei);
-      }
-    };
-
-    const handleMouseUp = (e: MouseEvent) => {
-      clicked = false;
-      const w = e.clientX - startX;
-      const h = e.clientY - startY;
-
-      ctx.strokeStyle = "#ffffff";
-      ctx.strokeRect(startX, startY, w, h);
-
-      setShapes((s) => [
-        ...s,
-        {
-          x: startX,
-          y: startY,
-          w,
-          h,
-        },
-      ]);
-      console.log(shapes);
-    };
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      //Todo
-      clicked = false;
-    };
-
-    const clear = () => {
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      ctx.fillStyle = "rgba(0, 0, 0)";
-      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-      if (shapes) {
-        shapes.forEach((s) => {
-          ctx.strokeStyle = "#ffffff";
-          ctx.strokeRect(s.x, s.y, s.w, s.h);
-        });
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    canvasRef.current?.addEventListener("mousedown", handleMouseDown);
-    canvasRef.current?.addEventListener("mouseup", handleMouseUp);
-    canvasRef.current?.addEventListener("mousemove", handleMouseMove);
-    canvasRef.current?.addEventListener("mouseleave", handleMouseLeave);
-    clear();
+    setOffline(o);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      canvasRef.current?.removeEventListener("mousedown", handleMouseDown);
-      canvasRef.current?.removeEventListener("mouseup", handleMouseUp);
+      o.destroy();
     };
-  }, [canvasRef, shapes]);
+  }, [canvasRef.current]);
 
   return (
-    <div>
-      <canvas ref={canvasRef}></canvas>
-    </div>
+    <>
+      <div className=" absolute top-2 left-5">
+        <Topbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+      ></canvas>
+    </>
   );
 };
 
