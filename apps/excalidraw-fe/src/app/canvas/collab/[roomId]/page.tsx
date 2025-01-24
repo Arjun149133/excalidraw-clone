@@ -1,4 +1,5 @@
 import SharedCanvas from "@/components/SharedCanvas";
+import Topbar from "@/components/Topbar";
 
 const CanvasCollabPage = async ({
   params,

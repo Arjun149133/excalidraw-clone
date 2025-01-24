@@ -140,10 +140,9 @@ wss.on("connection", async (ws, req) => {
             userId: userId,
           },
         });
-        console.log(chat);
 
+        console.log("created chat");
         room.forEach((u) => {
-          console.log(u.userId);
           u.ws.send(
             JSON.stringify({
               type: "chat",

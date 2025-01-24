@@ -1,5 +1,7 @@
 import { getExistingShapes } from "./http";
 
+export type Tool = "rect" | "circle" | "line";
+
 export type Shape =
   | {
       shape: "rect";
@@ -13,8 +15,8 @@ export type Shape =
   | {
       shape: "circle";
       params: {
-        x: number;
-        y: number;
+        startX: number;
+        startY: number;
         radius: number;
       };
     }
@@ -35,9 +37,9 @@ export class Game {
   private startY: number = 0;
   private clicked: boolean = false;
   private ctx: CanvasRenderingContext2D;
-  // private shapes: Shape[] = [];
   private socket: WebSocket;
   private existingShapes: Shape[] = [];
+  private selectedTool: Tool = "rect";
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -67,13 +69,14 @@ export class Game {
   }
 
   initSocketHandler() {
-    console.log("initsockethandler");
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("whynot:,", data);
 
       if (data.type === "chat") {
-        console.log(data);
+        const shape: Shape = data.payload;
+
+        this.existingShapes.push(shape);
+        this.clear();
       }
     };
   }
@@ -91,6 +94,11 @@ export class Game {
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
   }
 
+  setTool(tool: Tool) {
+    console.log("setting tool");
+    this.selectedTool = tool;
+  }
+
   handleMouseDown = (e: MouseEvent) => {
     this.startX = e.clientX;
     this.startY = e.clientY;
@@ -99,38 +107,50 @@ export class Game {
 
   handleMouseMove = (e: MouseEvent) => {
     if (this.clicked) {
-      const width = e.clientX - this.startX;
-      const hei = e.clientY - this.startY;
+      switch (this.selectedTool) {
+        case "rect":
+          const width = e.clientX - this.startX;
+          const hei = e.clientY - this.startY;
 
-      this.clear();
-      this.ctx.strokeStyle = "#ffffff";
-      this.ctx.strokeRect(this.startX, this.startY, width, hei);
+          this.clear();
+          this.ctx.strokeStyle = "#ffffff";
+          this.ctx.strokeRect(this.startX, this.startY, width, hei);
+          break;
+
+        case "circle":
+          const radius = Math.abs(e.clientX - this.startX);
+          this.clear();
+          this.ctx.beginPath();
+          this.ctx.strokeStyle = "#ffffff";
+          this.ctx.arc(this.startX, this.startY, radius, 0, 2 * Math.PI);
+          this.ctx.stroke();
+          this.ctx.closePath();
+          break;
+
+        case "line":
+          this.clear();
+          this.ctx.beginPath();
+          this.ctx.strokeStyle = "#ffffff";
+          this.ctx.moveTo(this.startX, this.startY);
+          this.ctx.lineTo(e.clientX, e.clientY);
+          this.ctx.stroke();
+          this.ctx.closePath();
+          break;
+
+        default:
+          break;
+      }
     }
   };
 
   handleMouseUp = (e: MouseEvent) => {
     this.clicked = false;
-    const w = e.clientX - this.startX;
-    const h = e.clientY - this.startY;
 
-    this.ctx.strokeStyle = "#ffffff";
-    this.ctx.strokeRect(this.startX, this.startY, w, h);
-
-    this.existingShapes.push({
-      shape: "rect",
-      params: {
-        startX: this.startX,
-        startY: this.startY,
-        width: w,
-        height: h,
-      },
-    });
-
-    this.socket.send(
-      JSON.stringify({
-        type: "chat",
-        roomId: this.roomId,
-        payload: {
+    switch (this.selectedTool) {
+      case "rect":
+        const w = e.clientX - this.startX;
+        const h = e.clientY - this.startY;
+        this.existingShapes.push({
           shape: "rect",
           params: {
             startX: this.startX,
@@ -138,9 +158,91 @@ export class Game {
             width: w,
             height: h,
           },
-        },
-      })
-    );
+        });
+
+        this.clear();
+
+        this.socket.send(
+          JSON.stringify({
+            type: "chat",
+            roomId: this.roomId,
+            payload: {
+              shape: "rect",
+              params: {
+                startX: this.startX,
+                startY: this.startY,
+                width: w,
+                height: h,
+              },
+            },
+          })
+        );
+        break;
+
+      case "circle":
+        const radius = Math.abs(e.clientX - this.startX);
+        this.existingShapes.push({
+          shape: "circle",
+          params: {
+            startX: this.startX,
+            startY: this.startY,
+            radius: radius,
+          },
+        });
+
+        this.clear();
+
+        this.socket.send(
+          JSON.stringify({
+            type: "chat",
+            roomId: this.roomId,
+            payload: {
+              shape: "circle",
+              params: {
+                startX: this.startX,
+                startY: this.startY,
+                radius: radius,
+              },
+            },
+          })
+        );
+
+        break;
+
+      case "line":
+        this.existingShapes.push({
+          shape: "line",
+          params: {
+            startX: this.startX,
+            startY: this.startY,
+            endX: e.clientX,
+            endY: e.clientY,
+          },
+        });
+
+        this.clear();
+
+        this.socket.send(
+          JSON.stringify({
+            type: "chat",
+            roomId: this.roomId,
+            payload: {
+              shape: "line",
+              params: {
+                startX: this.startX,
+                startY: this.startY,
+                endX: e.clientX,
+                endY: e.clientY,
+              },
+            },
+          })
+        );
+
+        break;
+
+      default:
+        break;
+    }
   };
 
   handleMouseLeave = (e: MouseEvent) => {
@@ -154,10 +256,33 @@ export class Game {
     this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
     if (this.existingShapes) {
       this.existingShapes.forEach((s) => {
-        if (s.shape === "rect") {
-          const { startX, startY, width, height } = s.params;
-          this.ctx.strokeStyle = "#ffffff";
-          this.ctx.strokeRect(startX, startY, width, height);
+        switch (s.shape) {
+          case "rect":
+            const { startX, startY, width, height } = s.params;
+            this.ctx.strokeStyle = "#ffffff";
+            this.ctx.strokeRect(startX, startY, width, height);
+            break;
+          case "circle":
+            const { startX: x, startY: y, radius } = s.params;
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = "#ffffff";
+            this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            this.ctx.stroke();
+            this.ctx.closePath();
+            break;
+          case "line":
+            const { startX: lineX, startY: lineY, endX, endY } = s.params;
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = "#ffffff";
+            this.ctx.moveTo(lineX, lineY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+            this.ctx.closePath();
+
+            break;
+
+          default:
+            break;
         }
       });
     }

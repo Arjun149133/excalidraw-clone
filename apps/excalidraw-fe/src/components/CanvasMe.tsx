@@ -14,24 +14,6 @@ type Shape = {
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
-  const socket = useSocket();
-
-  useEffect(() => {
-    getExistingShapes("2").then((result) => {
-      const { existingChats } = result;
-      const res = JSON.parse(existingChats[0].message).params;
-      console.log(res);
-
-      setShapes((s) => [...s, { x: res.x, y: res.y, w: res.w, h: res.h }]);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-    socket.onmessage = (msg) => {
-      console.log("message received:", msg);
-    };
-  }, [socket]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
@@ -123,18 +105,6 @@ const Canvas = () => {
   return (
     <div>
       <canvas ref={canvasRef}></canvas>
-      <Button
-        onClick={() => {
-          socket?.send(
-            JSON.stringify({
-              type: "join_room",
-              roomId: "2",
-            })
-          );
-        }}
-      >
-        join room
-      </Button>
     </div>
   );
 };
