@@ -41,7 +41,7 @@ export default function Topbar({
           onClick={() => {
             setSelectedTool(s.tool);
           }}
-          className={` bg-gray-700 hover:bg-gray-600 ${selectedTool === s.tool ? "bg-gray-500" : ""}`}
+          className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === s.tool ? "bg-gray-500" : ""}`}
         >
           <s.icon />
         </Button>

@@ -3,27 +3,29 @@ import { Offline } from "@/draw/Offline";
 import { Tool } from "@/utils/types";
 import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
+import { useWindowSize } from "@/hooks/useWindowSize";
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [offline, setOffline] = useState<Offline>();
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
+  const windowSize = useWindowSize();
 
   useEffect(() => {
-    console.log("se:,", selectedTool);
     offline?.setTool(selectedTool);
   }, [selectedTool]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
     const o = new Offline(canvasRef.current);
+    o.clear();
 
     setOffline(o);
 
     return () => {
       o.destroy();
     };
-  }, [canvasRef.current]);
+  }, [canvasRef.current, windowSize]);
 
   return (
     <>
@@ -32,8 +34,12 @@ const Canvas = () => {
       </div>
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={windowSize.width}
+        height={windowSize.height}
+        style={{
+          width: windowSize.width,
+          height: windowSize.height,
+        }}
       ></canvas>
     </>
   );

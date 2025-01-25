@@ -27,6 +27,7 @@ export class Offline {
     const shapes: Shape[] = JSON.parse(shapesString);
     this.existingShapes = shapes;
     console.log(this.existingShapes);
+
     this.clear();
   }
 
@@ -155,10 +156,19 @@ export class Offline {
     this.clicked = false;
   };
 
+  resize = () => {
+    console.log("calae");
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  };
+
   clear = () => {
-    this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    console.log("can", this.canvas.width, this.canvas.height);
+    this.resize();
+    console.log("win", window.innerWidth, window.innerHeight);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "rgba(0, 0, 0)";
-    this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.existingShapes) {
       this.existingShapes.forEach((s) => {
         switch (s.shape) {
