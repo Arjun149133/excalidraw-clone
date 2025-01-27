@@ -5,15 +5,16 @@ import { Tool } from "@/utils/types";
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
+import { useWindowSize } from "@/hooks/useWindowSize";
 
 const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [game, setGame] = useState<Game>();
   const socket = useSocket(roomId);
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
+  const windowSize = useWindowSize();
 
   useEffect(() => {
-    console.log("se:,", selectedTool);
     game?.setTool(selectedTool);
   }, [selectedTool]);
 
@@ -27,7 +28,7 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
     return () => {
       g.destroy();
     };
-  }, [canvasRef.current, socket]);
+  }, [canvasRef.current, socket, windowSize]);
 
   if (!socket) {
     <div>connecting to server...</div>;
@@ -40,8 +41,12 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
       </div>
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={windowSize.width}
+        height={windowSize.height}
+        style={{
+          width: windowSize.width,
+          height: windowSize.height,
+        }}
       ></canvas>
     </>
   );

@@ -1,4 +1,3 @@
-import { Offline } from "@/draw/Offline";
 import { useEffect, useState } from "react";
 
 type params = {
@@ -20,7 +19,6 @@ export function useWindowSize() {
       });
     }
     window.addEventListener("resize", handleResize);
-    console.log("listening");
     handleResize();
 
     return () => {
