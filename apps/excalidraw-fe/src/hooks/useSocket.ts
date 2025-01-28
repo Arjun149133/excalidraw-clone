@@ -16,12 +16,6 @@ export const useSocket = (roomId: string) => {
 
     ws.onopen = () => {
       setSocket(ws);
-      ws.send(
-        JSON.stringify({
-          type: "join_room",
-          roomId: roomId,
-        })
-      );
       console.log("connection made");
     };
 

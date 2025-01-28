@@ -1,5 +1,4 @@
 "use client";
-
 import { Game } from "@/draw/Game";
 import { Tool } from "@/utils/types";
 import { useSocket } from "@/hooks/useSocket";
@@ -19,8 +18,25 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   }, [selectedTool]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
     if (!socket) return;
+    socket.send(
+      JSON.stringify({
+        type: "join_room",
+        roomId: roomId,
+      })
+    );
+    console.log("sent");
+  }, [socket]);
+
+  useEffect(() => {
+    if (!canvasRef.current) {
+      console.log("no canvas");
+      return;
+    }
+    if (!socket) {
+      console.log("no socket");
+      return;
+    }
 
     const g = new Game(canvasRef.current, roomId, socket);
     setGame(g);
@@ -31,7 +47,7 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   }, [canvasRef.current, socket, windowSize]);
 
   if (!socket) {
-    <div>connecting to server...</div>;
+    <div className=" bg-black">connecting to server...</div>;
   }
 
   return (

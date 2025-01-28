@@ -123,17 +123,53 @@ export class Offline {
 
     if (this.singleTouch) {
       // add to history
-      this.existingShapes.push({
-        shape: "line",
-        params: {
-          startX: prevScaledX,
-          startY: prevScaledY,
-          endX: scaledX,
-          endY: scaledY,
-        },
-      });
+      switch (this.selectedTool) {
+        case "line":
+          this.existingShapes.push({
+            shape: "line",
+            params: {
+              startX: prevScaledX,
+              startY: prevScaledY,
+              endX: scaledX,
+              endY: scaledY,
+            },
+          });
 
-      this.drawLine(prevTouch0X, prevTouch0Y, touch0X, touch0Y);
+          break;
+
+        case "rect":
+          const width = touch0X - this.toScreenX(this.startX);
+          const hei = touch0Y - this.toScreenY(this.startY);
+
+          this.existingShapes.push({
+            shape: "rect",
+            params: {
+              startX: this.toTrueX(this.startX),
+              startY: this.toTrueY(this.startY),
+              width: width,
+              height: hei,
+            },
+          });
+
+          break;
+
+        case "circle":
+          this.existingShapes.push({
+            shape: "circle",
+            params: {
+              startX: this.toTrueX(this.startX),
+              startY: this.toTrueY(this.startY),
+              radius:
+                Math.abs(touch0X - this.toScreenX(this.startX)) * this.scale,
+            },
+          });
+
+          break;
+
+        default:
+          break;
+      }
+
       this.clear();
     }
 
@@ -195,6 +231,8 @@ export class Offline {
     }
     this.prevTouches[0] = event.touches[0];
     this.prevTouches[1] = event.touches[1];
+
+    console.log("scale", this.scale);
   };
   onTouchEnd = (event: TouchEvent) => {
     this.singleTouch = false;
@@ -217,6 +255,8 @@ export class Offline {
 
     this.offsetX -= unitsAddLeft;
     this.offsetY -= unitsAddTop;
+
+    console.log("scale", this.scale);
 
     this.clear();
   };
@@ -372,11 +412,25 @@ export class Offline {
 
   drawLine = (x0: number, y0: number, x1: number, y1: number) => {
     this.ctx.beginPath();
+    this.ctx.strokeStyle = "#ffffff";
     this.ctx.moveTo(x0, y0);
     this.ctx.lineTo(x1, y1);
-    this.ctx.strokeStyle = "#000";
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
+    this.ctx.closePath();
+  };
+
+  drawCircle = (x: number, y: number, radius: number) => {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "#ffffff";
+    this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    this.ctx.stroke();
+    this.ctx.closePath();
+  };
+
+  drawRect = (x: number, y: number, width: number, height: number) => {
+    this.ctx.strokeStyle = "#ffffff";
+    this.ctx.strokeRect(x, y, width, height);
   };
 
   resize = () => {
@@ -394,25 +448,29 @@ export class Offline {
         switch (s.shape) {
           case "rect":
             const { startX, startY, width, height } = s.params;
-            this.ctx.strokeStyle = "#ffffff";
-            this.ctx.strokeRect(startX, startY, width, height);
+            this.drawRect(
+              this.toTrueX(startX),
+              this.toTrueY(startY),
+              width * this.scale,
+              height * this.scale
+            );
             break;
           case "circle":
             const { startX: x, startY: y, radius } = s.params;
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = "#ffffff";
-            this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
-            this.ctx.stroke();
-            this.ctx.closePath();
+            this.drawCircle(
+              this.toScreenX(x),
+              this.toScreenY(y),
+              radius * this.scale
+            );
             break;
           case "line":
             const { startX: lineX, startY: lineY, endX, endY } = s.params;
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = "#ffffff";
-            this.ctx.moveTo(this.toScreenX(lineX), this.toScreenY(lineY));
-            this.ctx.lineTo(this.toScreenX(endX), this.toScreenY(endY));
-            this.ctx.stroke();
-            this.ctx.closePath();
+            this.drawLine(
+              this.toScreenX(lineX),
+              this.toScreenY(lineY),
+              this.toScreenX(endX),
+              this.toScreenY(endY)
+            );
 
             break;
 

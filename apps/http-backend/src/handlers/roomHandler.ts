@@ -50,8 +50,6 @@ export const getRoomChats = async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
 
-    console.log(roomId);
-
     if (!roomId) {
       res.status(400).json({
         msg: "no roomId provided",
