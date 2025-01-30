@@ -11,7 +11,7 @@ export const useSocket = (roomId: string) => {
   useEffect(() => {
     if (socket) return;
 
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(url + `&roomId=${roomId}`);
     console.log("heelo:", roomId);
 
     ws.onopen = () => {

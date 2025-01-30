@@ -18,7 +18,6 @@ const Canvas = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
     const o = new Offline(canvasRef.current);
-    o.clear();
 
     setOffline(o);
 

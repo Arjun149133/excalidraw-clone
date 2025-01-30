@@ -3,9 +3,11 @@ import {
   EraserIcon,
   PenLineIcon,
   RectangleHorizontalIcon,
+  ArrowUpLeft,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tool } from "@/utils/types";
+import DashLine from "@/icons/DashLine";
 
 const shapeButtons = [
   {
@@ -18,11 +20,19 @@ const shapeButtons = [
   },
   {
     icon: PenLineIcon,
+    tool: "freehand",
+  },
+  {
+    icon: DashLine,
     tool: "line",
   },
   {
     icon: EraserIcon,
     tool: "eraser",
+  },
+  {
+    icon: ArrowUpLeft,
+    tool: "select",
   },
 ];
 

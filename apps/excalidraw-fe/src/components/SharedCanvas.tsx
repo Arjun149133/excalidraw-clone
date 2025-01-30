@@ -18,17 +18,6 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   }, [selectedTool]);
 
   useEffect(() => {
-    if (!socket) return;
-    socket.send(
-      JSON.stringify({
-        type: "join_room",
-        roomId: roomId,
-      })
-    );
-    console.log("sent");
-  }, [socket]);
-
-  useEffect(() => {
     if (!canvasRef.current) {
       console.log("no canvas");
       return;

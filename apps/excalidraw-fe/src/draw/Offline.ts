@@ -4,22 +4,18 @@ export class Offline {
   private canvas: HTMLCanvasElement;
   private startX: number = 0;
   private startY: number = 0;
-  private clicked: boolean = false;
   private ctx: CanvasRenderingContext2D;
   private existingShapes: Shape[] = [];
+  private existingShapesCopy: Shape[] = [];
   private selectedTool: Tool = "rect";
-  private offsetX: number = 0;
-  private offsetY: number = 0;
-  private scale: number = 1;
-  private prevTouches: TouchList | [null, null] = [null, null];
-  private singleTouch = false;
-  private doubleTouch = false;
   private leftMouseDown = false;
   private rightMouseDown = false;
-  private cursorX = 0;
-  private cursorY = 0;
-  private prevCursorX = 0;
-  private prevCursorY = 0;
+  private action: "resize" | "move" = "move";
+  private selectedShape: Shape | null = null;
+  private selectedShapeOffSetX: number = 0;
+  private selectedShapeOffSetY: number = 0;
+  private selectedShapeEndX: number = 0;
+  private selectedShapeEndY: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -42,17 +38,16 @@ export class Offline {
     this.clear();
   }
 
+  setTool(tool: Tool) {
+    this.selectedTool = tool;
+    console.log(this.selectedTool);
+  }
+
   initMouseHandlers() {
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseleave", this.handleMouseLeave);
-    this.canvas.addEventListener("wheel", this.onMouseWheel);
-
-    this.canvas.addEventListener("touchstart", this.onTouchStart);
-    this.canvas.addEventListener("touchmove", this.onTouchMove);
-    this.canvas.addEventListener("touchend", this.onTouchEnd);
-    this.canvas.addEventListener("touchcancel", this.onTouchEnd);
   }
 
   destroy() {
@@ -61,211 +56,7 @@ export class Offline {
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
   }
 
-  toScreenX = (xTrue: number) => {
-    return (xTrue + this.offsetX) * this.scale;
-  };
-
-  toScreenY = (yTrue: number) => {
-    return (yTrue + this.offsetY) * this.scale;
-  };
-
-  toTrueX = (xScreen: number) => {
-    return xScreen / this.scale - this.offsetX;
-  };
-
-  toTrueY = (yScreen: number) => {
-    return yScreen / this.scale - this.offsetY;
-  };
-
-  trueHeight = () => {
-    return this.canvas.clientHeight / this.scale;
-  };
-
-  trueWidth = () => {
-    return this.canvas.clientWidth / this.scale;
-  };
-
-  setTool(tool: Tool) {
-    console.log("setting tool");
-    this.selectedTool = tool;
-  }
-
-  onTouchStart = (e: TouchEvent) => {
-    if (e.touches.length === 1) {
-      this.singleTouch = true;
-      this.doubleTouch = false;
-    }
-
-    if (e.touches.length >= 2) {
-      this.singleTouch = false;
-      this.doubleTouch = true;
-    }
-
-    this.prevTouches[0] = e.touches[0];
-    this.prevTouches[1] = e.touches[1];
-  };
-
-  onTouchMove = (event: TouchEvent) => {
-    if (this.prevTouches[0] === null || this.prevTouches[1] === null) {
-      return;
-    }
-
-    // get first touch coordinates
-    const touch0X = event.touches[0].pageX;
-    const touch0Y = event.touches[0].pageY;
-    const prevTouch0X = this.prevTouches[0].pageX;
-    const prevTouch0Y = this.prevTouches[0].pageY;
-
-    const scaledX = this.toTrueX(touch0X);
-    const scaledY = this.toTrueY(touch0Y);
-    const prevScaledX = this.toTrueX(prevTouch0X);
-    const prevScaledY = this.toTrueY(prevTouch0Y);
-
-    if (this.singleTouch) {
-      // add to history
-      switch (this.selectedTool) {
-        case "line":
-          this.existingShapes.push({
-            shape: "line",
-            params: {
-              startX: prevScaledX,
-              startY: prevScaledY,
-              endX: scaledX,
-              endY: scaledY,
-            },
-          });
-
-          break;
-
-        case "rect":
-          const width = touch0X - this.toScreenX(this.startX);
-          const hei = touch0Y - this.toScreenY(this.startY);
-
-          this.existingShapes.push({
-            shape: "rect",
-            params: {
-              startX: this.toTrueX(this.startX),
-              startY: this.toTrueY(this.startY),
-              width: width,
-              height: hei,
-            },
-          });
-
-          break;
-
-        case "circle":
-          this.existingShapes.push({
-            shape: "circle",
-            params: {
-              startX: this.toTrueX(this.startX),
-              startY: this.toTrueY(this.startY),
-              radius:
-                Math.abs(touch0X - this.toScreenX(this.startX)) * this.scale,
-            },
-          });
-
-          break;
-
-        default:
-          break;
-      }
-
-      this.clear();
-    }
-
-    if (this.doubleTouch) {
-      if (this.prevTouches[0] === null || this.prevTouches[1] === null) {
-        return;
-      }
-
-      // get second touch coordinates
-      const touch1X = event.touches[1].pageX;
-      const touch1Y = event.touches[1].pageY;
-      const prevTouch1X = this.prevTouches[1].pageX;
-      const prevTouch1Y = this.prevTouches[1].pageY;
-
-      // get midpoints
-      const midX = (touch0X + touch1X) / 2;
-      const midY = (touch0Y + touch1Y) / 2;
-      const prevMidX = (prevTouch0X + prevTouch1X) / 2;
-      const prevMidY = (prevTouch0Y + prevTouch1Y) / 2;
-
-      // calculate the distances between the touches
-      const hypot = Math.sqrt(
-        Math.pow(touch0X - touch1X, 2) + Math.pow(touch0Y - touch1Y, 2)
-      );
-      const prevHypot = Math.sqrt(
-        Math.pow(prevTouch0X - prevTouch1X, 2) +
-          Math.pow(prevTouch0Y - prevTouch1Y, 2)
-      );
-
-      // calculate the screen scale change
-      var zoomAmount = hypot / prevHypot;
-      this.scale = this.scale * zoomAmount;
-      const scaleAmount = 1 - zoomAmount;
-
-      // calculate how many pixels the midpoints have moved in the x and y direction
-      const panX = midX - prevMidX;
-      const panY = midY - prevMidY;
-      // scale this movement based on the zoom level
-      this.offsetX += panX / this.scale;
-      this.offsetY += panY / this.scale;
-
-      // Get the relative position of the middle of the zoom.
-      // 0, 0 would be top left.
-      // 0, 1 would be top right etc.
-      var zoomRatioX = midX / this.canvas.clientWidth;
-      var zoomRatioY = midY / this.canvas.clientHeight;
-
-      // calculate the amounts zoomed from each edge of the screen
-      const unitsZoomedX = this.trueWidth() * scaleAmount;
-      const unitsZoomedY = this.trueHeight() * scaleAmount;
-
-      const unitsAddLeft = unitsZoomedX * zoomRatioX;
-      const unitsAddTop = unitsZoomedY * zoomRatioY;
-
-      this.offsetX += unitsAddLeft;
-      this.offsetY += unitsAddTop;
-
-      this.clear();
-    }
-    this.prevTouches[0] = event.touches[0];
-    this.prevTouches[1] = event.touches[1];
-
-    console.log("scale", this.scale);
-  };
-  onTouchEnd = (event: TouchEvent) => {
-    this.singleTouch = false;
-    this.doubleTouch = false;
-  };
-
-  onMouseWheel = (e: WheelEvent) => {
-    const deltaY = e.deltaY;
-    const scaleAmount = -deltaY / 500;
-    this.scale = this.scale * (1 + scaleAmount);
-
-    let distX = e.pageX / this.canvas.clientWidth;
-    let distY = e.pageY / this.canvas.clientHeight;
-
-    const unitsZoomedX = this.trueWidth() * scaleAmount;
-    const unitsZoomedY = this.trueHeight() * scaleAmount;
-
-    const unitsAddLeft = unitsZoomedX * distX;
-    const unitsAddTop = unitsZoomedY * distY;
-
-    this.offsetX -= unitsAddLeft;
-    this.offsetY -= unitsAddTop;
-
-    console.log("scale", this.scale);
-
-    this.clear();
-  };
-
   handleMouseDown = (e: MouseEvent) => {
-    this.startX = e.clientX;
-    this.startY = e.clientY;
-    this.clicked = true;
-
     if (e.button === 0) {
       this.leftMouseDown = true;
       this.rightMouseDown = false;
@@ -276,20 +67,57 @@ export class Offline {
       this.leftMouseDown = false;
     }
 
-    this.cursorX = e.pageX;
-    this.cursorY = e.pageY;
-    this.prevCursorX = e.pageX;
-    this.prevCursorY = e.pageY;
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    if (this.selectedTool === "select") {
+      if (this.action === "move") {
+        const x = e.clientX;
+        const y = e.clientY;
+
+        this.existingShapes.forEach((s, index) => {
+          switch (s.shape) {
+            case "rect":
+              const { startX, startY, width, height } = s.params;
+              if (
+                x > startX &&
+                x < startX + width &&
+                y > startY &&
+                y < startY + height
+              ) {
+                this.selectedShape = s;
+              }
+              break;
+
+            case "circle":
+              const { startX: cx, startY: cy, radius } = s.params;
+              if (this.distance(x, y, cx, cy) < radius) {
+                this.selectedShape = s;
+              }
+              break;
+
+            case "line":
+              const { startX: x0, startY: y0, endX: x1, endY: y1 } = s.params;
+              if (this.mouseOnTheLine(x, y, x0, y0, x1, y1)) {
+                this.selectedShape = s;
+                this.selectedShapeOffSetX = x - x0;
+                this.selectedShapeOffSetY = y - y0;
+                this.selectedShapeEndX = x - x1;
+                this.selectedShapeEndY = y - y1;
+              }
+              break;
+
+            default:
+              break;
+          }
+        });
+      }
+    } else {
+      this.startX = e.clientX;
+      this.startY = e.clientY;
+    }
   };
 
   handleMouseMove = (e: MouseEvent) => {
-    this.cursorX = e.pageX;
-    this.cursorY = e.pageY;
-    const scaledX = this.toTrueX(this.cursorX);
-    const scaledY = this.toTrueY(this.cursorY);
-    const prevScaledX = this.toTrueX(this.prevCursorX);
-    const prevScaledY = this.toTrueY(this.prevCursorY);
-
     if (this.leftMouseDown) {
       switch (this.selectedTool) {
         case "rect":
@@ -311,23 +139,28 @@ export class Offline {
           this.ctx.closePath();
           break;
 
-        case "line":
+        case "freehand":
           this.clear();
+          this.drawLine(this.startX, this.startY, e.clientX, e.clientY);
           this.existingShapes.push({
             shape: "line",
             params: {
-              startX: prevScaledX,
-              startY: prevScaledY,
-              endX: scaledX,
-              endY: scaledY,
+              startX: this.startX,
+              startY: this.startY,
+              endX: e.clientX,
+              endY: e.clientY,
             },
           });
-          this.drawLine(
-            this.prevCursorX,
-            this.prevCursorY,
-            this.cursorX,
-            this.cursorY
-          );
+          if (this.startX !== e.clientX && this.startY !== e.clientY) {
+            this.startX = e.clientX;
+            this.startY = e.clientY;
+          }
+          break;
+
+        case "line":
+          this.clear();
+          this.drawLine(this.startX, this.startY, e.clientX, e.clientY);
+
           break;
 
         default:
@@ -336,17 +169,12 @@ export class Offline {
     }
 
     if (this.rightMouseDown) {
-      this.offsetX += (this.cursorX - this.prevCursorX) / this.scale;
-      this.offsetY += (this.cursorY - this.prevCursorY) / this.scale;
       this.clear();
     }
-
-    this.prevCursorX = this.cursorX;
-    this.prevCursorY = this.cursorY;
   };
 
   handleMouseUp = (e: MouseEvent) => {
-    this.clicked = false;
+    // this.clicked = false;
     this.leftMouseDown = false;
     this.rightMouseDown = false;
 
@@ -382,7 +210,7 @@ export class Offline {
 
         break;
 
-      case "line":
+      case "freehand":
         this.existingShapes.push({
           shape: "line",
           params: {
@@ -394,6 +222,58 @@ export class Offline {
         });
 
         this.clear();
+
+      case "line":
+        this.existingShapes.push({
+          shape: "line",
+          params: {
+            startX: this.startX,
+            startY: this.startY,
+            endX: e.clientX,
+            endY: e.clientY,
+          },
+        });
+
+      case "select":
+        if (this.action === "move") {
+          if (this.selectedShape) {
+            const updatedParams = { ...this.selectedShape.params };
+            switch (this.selectedShape.shape) {
+              case "rect":
+                console.log("rect", updatedParams);
+                const { startX, startY } = updatedParams;
+                updatedParams.startX = startX + e.clientX - this.startX;
+                updatedParams.startY = startY + e.clientY - this.startY;
+                break;
+
+              case "circle":
+                const { startX: cx, startY: cy } = updatedParams;
+                updatedParams.startX = cx + e.clientX - this.startX;
+                updatedParams.startY = cy + e.clientY - this.startY;
+                break;
+
+              case "line":
+                console.log("line", updatedParams);
+                const {
+                  startX: x0,
+                  startY: y0,
+                  endX: x1,
+                  endY: y1,
+                } = updatedParams;
+                updatedParams.startX = x0 + (e.clientX - this.startX);
+                updatedParams.startY = y0 + (e.clientY - this.startY);
+                updatedParams.endX = x1 + (e.clientX - this.startX);
+                updatedParams.endY = y1 + (e.clientY - this.startY);
+                break;
+
+              default:
+                break;
+            }
+
+            this.updateShape(this.selectedShape, updatedParams);
+            this.clear();
+          }
+        }
 
         break;
 
@@ -407,7 +287,7 @@ export class Offline {
 
   handleMouseLeave = (e: MouseEvent) => {
     //Todo
-    this.clicked = false;
+    // this.clicked = false;
   };
 
   drawLine = (x0: number, y0: number, x1: number, y1: number) => {
@@ -448,29 +328,15 @@ export class Offline {
         switch (s.shape) {
           case "rect":
             const { startX, startY, width, height } = s.params;
-            this.drawRect(
-              this.toTrueX(startX),
-              this.toTrueY(startY),
-              width * this.scale,
-              height * this.scale
-            );
+            this.drawRect(startX, startY, width, height);
             break;
           case "circle":
             const { startX: x, startY: y, radius } = s.params;
-            this.drawCircle(
-              this.toScreenX(x),
-              this.toScreenY(y),
-              radius * this.scale
-            );
+            this.drawCircle(x, y, radius);
             break;
           case "line":
             const { startX: lineX, startY: lineY, endX, endY } = s.params;
-            this.drawLine(
-              this.toScreenX(lineX),
-              this.toScreenY(lineY),
-              this.toScreenX(endX),
-              this.toScreenY(endY)
-            );
+            this.drawLine(lineX, lineY, endX, endY);
 
             break;
 
@@ -479,5 +345,37 @@ export class Offline {
         }
       });
     }
+  };
+
+  distance = (x0: number, y0: number, x1: number, y1: number) => {
+    return Math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2);
+  };
+
+  mouseOnTheLine = (
+    x: number,
+    y: number,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number
+  ) => {
+    if (
+      this.distance(x, y, x0, y0) +
+        this.distance(x, y, x1, y1) -
+        this.distance(x0, y0, x1, y1) <
+      0.5
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  updateShape = (shape: Shape, updatedParams: any) => {
+    const index = this.existingShapes.findIndex((s) => s === shape);
+    if (index === -1) return;
+
+    this.existingShapes[index].params = updatedParams;
+    localStorage.removeItem("existingShapes");
+    localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
   };
 }

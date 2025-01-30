@@ -70,6 +70,13 @@ wss.on("connection", async (ws, req) => {
     return;
   }
 
+  const roomId = queryParams.get("roomId");
+  if (!roomId) {
+    console.log("no room id");
+    ws.close();
+    return;
+  }
+
   const userId = findUserId(token);
   if (!userId) {
     console.log("no user id");
@@ -87,62 +94,28 @@ wss.on("connection", async (ws, req) => {
   const user: User = { ws, userId, roomIds: [] };
 
   users.push(user);
+  let room = roomMapping.get(roomId);
+  if (!room) {
+    roomMapping.set(roomId, []);
+    room = roomMapping.get(roomId);
+  }
+  room?.push(user);
+  user.roomIds.push(roomId);
+  room?.forEach((u) => {
+    u.ws.send(
+      JSON.stringify({
+        type: "joined_room",
+        payload: {
+          userId: userId,
+        },
+      })
+    );
+  });
 
   ws.on("message", async (message) => {
     console.log("we are in msg");
     const data = JSON.parse(message.toString());
     console.log("herererer: ", data);
-
-    if (data.type === "join_room") {
-      const roomId = data.roomId;
-      if (!roomId || typeof roomId !== "string") {
-        return;
-      }
-      let room = roomMapping.get(roomId);
-      if (!room) {
-        roomMapping.set(roomId, []);
-        room = roomMapping.get(roomId);
-      }
-
-      room?.push(user);
-      user.roomIds.push(roomId);
-
-      room?.forEach((u) => {
-        u.ws.send(
-          JSON.stringify({
-            type: "joined_room",
-            payload: {
-              userId: userId,
-            },
-          })
-        );
-      });
-    }
-
-    if (data.type === "leave_room") {
-      const roomId = data.roomId;
-      let room = roomMapping.get(roomId);
-      if (!room) {
-        return;
-      }
-
-      const newRoom = room.filter((u) => u.userId !== userId);
-
-      roomMapping.delete(roomId);
-      roomMapping.set(roomId, newRoom);
-
-      room = roomMapping.get(roomId);
-      room?.forEach((u) => {
-        u.ws.send(
-          JSON.stringify({
-            type: "left_room",
-            payload: {
-              userId: userId,
-            },
-          })
-        );
-      });
-    }
 
     if (data.type === "chat") {
       try {
@@ -182,6 +155,31 @@ wss.on("connection", async (ws, req) => {
       } catch (error) {
         console.error(error);
       }
+    }
+
+    if (data.type === "leave_room") {
+      const roomId = data.roomId;
+      let room = roomMapping.get(roomId);
+      if (!room) {
+        return;
+      }
+
+      const newRoom = room.filter((u) => u.userId !== userId);
+
+      roomMapping.delete(roomId);
+      roomMapping.set(roomId, newRoom);
+
+      room = roomMapping.get(roomId);
+      room?.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "left_room",
+            payload: {
+              userId: userId,
+            },
+          })
+        );
+      });
     }
   });
 });

@@ -1,4 +1,10 @@
-export type Tool = "rect" | "circle" | "line";
+export type Tool =
+  | "rect"
+  | "circle"
+  | "line"
+  | "freehand"
+  | "eraser"
+  | "select";
 
 export type Shape =
   | {
