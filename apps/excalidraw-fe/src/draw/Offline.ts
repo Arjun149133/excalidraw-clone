@@ -6,7 +6,6 @@ export class Offline {
   private startY: number = 0;
   private ctx: CanvasRenderingContext2D;
   private existingShapes: Shape[] = [];
-  private existingShapesCopy: Shape[] = [];
   private selectedTool: Tool = "rect";
   private leftMouseDown = false;
   private rightMouseDown = false;
@@ -14,8 +13,6 @@ export class Offline {
   private selectedShape: Shape | null = null;
   private selectedShapeOffSetX: number = 0;
   private selectedShapeOffSetY: number = 0;
-  private selectedShapeEndX: number = 0;
-  private selectedShapeEndY: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -40,6 +37,11 @@ export class Offline {
 
   setTool(tool: Tool) {
     this.selectedTool = tool;
+    this.startX = 0;
+    this.startY = 0;
+    if (this.selectedTool === "select") {
+      this.action = "move";
+    }
     console.log(this.selectedTool);
   }
 
@@ -69,6 +71,7 @@ export class Offline {
 
     this.startX = e.clientX;
     this.startY = e.clientY;
+
     if (this.selectedTool === "select") {
       if (this.action === "move") {
         const x = e.clientX;
@@ -77,32 +80,93 @@ export class Offline {
         this.existingShapes.forEach((s, index) => {
           switch (s.shape) {
             case "rect":
-              const { startX, startY, width, height } = s.params;
+              const updatedParams = { ...s.params };
+              const { startX, startY, width, height } = updatedParams;
+              if (Math.abs(startX - x) < 5 && Math.abs(startY - y) < 5) {
+                this.selectedShape = s;
+                updatedParams.startX += width;
+                updatedParams.startY += height;
+                updatedParams.width = -width;
+                updatedParams.height = -height;
+
+                this.updateShape(s, updatedParams);
+                this.action = "resize";
+              }
+              if (
+                Math.abs(startX + width - x) < 5 &&
+                Math.abs(startY + height - y) < 5
+              ) {
+                this.selectedShape = s;
+                this.action = "resize";
+              }
+              if (
+                Math.abs(startX - x) < 5 &&
+                Math.abs(startY + height - y) < 5
+              ) {
+                this.selectedShape = s;
+                updatedParams.startX += width;
+                updatedParams.width = -width;
+                this.updateShape(s, updatedParams);
+                this.action = "resize";
+              }
+              if (
+                Math.abs(startX + width - x) < 5 &&
+                Math.abs(startY - y) < 5
+              ) {
+                this.selectedShape = s;
+                updatedParams.startY += height;
+                updatedParams.height = -height;
+                this.updateShape(s, updatedParams);
+                this.action = "resize";
+              }
               if (
                 x > startX &&
                 x < startX + width &&
                 y > startY &&
                 y < startY + height
               ) {
+                console.log("move///");
                 this.selectedShape = s;
+                this.selectedShapeOffSetX = x - startX;
+                this.selectedShapeOffSetY = y - startY;
               }
               break;
 
             case "circle":
               const { startX: cx, startY: cy, radius } = s.params;
+              if (
+                radius - 5 < this.distance(x, y, cx, cy) &&
+                this.distance(x, y, cx, cy) < radius + 5
+              ) {
+                this.action = "resize";
+                this.selectedShape = s;
+                console.log("resize");
+              }
               if (this.distance(x, y, cx, cy) < radius) {
                 this.selectedShape = s;
+                this.selectedShapeOffSetX = x - cx;
+                this.selectedShapeOffSetY = y - cy;
               }
               break;
 
             case "line":
               const { startX: x0, startY: y0, endX: x1, endY: y1 } = s.params;
+              if (Math.abs(x - x0) < 5 && Math.abs(y - y0) < 5) {
+                this.action = "resize";
+                this.selectedShape = s;
+                s.params.startX = x1;
+                s.params.startY = y1;
+              }
+
+              if (Math.abs(x - x1) < 5 && Math.abs(y - y1) < 5) {
+                this.action = "resize";
+                this.selectedShape = s;
+                console.log("resize");
+              }
               if (this.mouseOnTheLine(x, y, x0, y0, x1, y1)) {
                 this.selectedShape = s;
                 this.selectedShapeOffSetX = x - x0;
                 this.selectedShapeOffSetY = y - y0;
-                this.selectedShapeEndX = x - x1;
-                this.selectedShapeEndY = y - y1;
               }
               break;
 
@@ -163,6 +227,81 @@ export class Offline {
 
           break;
 
+        case "select":
+          if (this.action === "move") {
+            if (this.selectedShape) {
+              const updatedParams = { ...this.selectedShape.params };
+              switch (this.selectedShape.shape) {
+                case "rect":
+                  console.log("rect", updatedParams);
+                  const { startX, startY } = updatedParams;
+                  updatedParams.startX = startX + e.clientX - this.startX;
+                  updatedParams.startY = startY + e.clientY - this.startY;
+                  break;
+
+                case "circle":
+                  const { startX: cx, startY: cy } = updatedParams;
+                  updatedParams.startX = cx + e.clientX - this.startX;
+                  updatedParams.startY = cy + e.clientY - this.startY;
+                  break;
+
+                case "line":
+                  console.log("line in move", updatedParams);
+                  const {
+                    startX: x0,
+                    startY: y0,
+                    endX: x1,
+                    endY: y1,
+                  } = updatedParams;
+                  updatedParams.startX = x0 + (e.clientX - this.startX);
+                  updatedParams.startY = y0 + (e.clientY - this.startY);
+                  updatedParams.endX = x1 + (e.clientX - this.startX);
+                  updatedParams.endY = y1 + (e.clientY - this.startY);
+                  break;
+
+                default:
+                  break;
+              }
+
+              this.startX = updatedParams.startX + this.selectedShapeOffSetX;
+              this.startY = updatedParams.startY + this.selectedShapeOffSetY;
+              this.updateShape(this.selectedShape, updatedParams);
+              this.clear();
+            }
+          } else if (this.action === "resize") {
+            console.log("resizehappening");
+            if (this.selectedShape) {
+              const updatedParams = { ...this.selectedShape.params };
+              switch (this.selectedShape.shape) {
+                case "rect":
+                  console.log("rect", updatedParams);
+                  const { startX, startY, width, height } = updatedParams;
+                  updatedParams.width = e.clientX - startX;
+                  updatedParams.height = e.clientY - startY;
+                  break;
+
+                case "circle":
+                  const { startX: cx, startY: cy } = updatedParams;
+                  const radius = this.distance(cx, cy, e.clientX, e.clientY);
+                  updatedParams.radius = radius;
+                  break;
+
+                case "line":
+                  console.log("line in move", updatedParams);
+                  updatedParams.endX = e.clientX;
+                  updatedParams.endY = e.clientY;
+                  break;
+
+                default:
+                  break;
+              }
+              this.updateShape(this.selectedShape, updatedParams);
+              this.clear();
+            }
+          }
+
+          break;
+
         default:
           break;
       }
@@ -180,15 +319,18 @@ export class Offline {
 
     switch (this.selectedTool) {
       case "rect":
-        const w = e.clientX - this.startX;
-        const h = e.clientY - this.startY;
+        const { newX, newY, newW, newH } = this.correctRectangleParams(
+          e,
+          this.startX,
+          this.startY
+        );
         this.existingShapes.push({
           shape: "rect",
           params: {
-            startX: this.startX,
-            startY: this.startY,
-            width: w,
-            height: h,
+            startX: newX,
+            startY: newY,
+            width: newW,
+            height: newH,
           },
         });
 
@@ -234,47 +376,33 @@ export class Offline {
           },
         });
 
+        break;
+
       case "select":
-        if (this.action === "move") {
-          if (this.selectedShape) {
-            const updatedParams = { ...this.selectedShape.params };
-            switch (this.selectedShape.shape) {
-              case "rect":
-                console.log("rect", updatedParams);
-                const { startX, startY } = updatedParams;
-                updatedParams.startX = startX + e.clientX - this.startX;
-                updatedParams.startY = startY + e.clientY - this.startY;
-                break;
+        if (this.action === "resize") {
+          this.action = "move";
+          switch (this.selectedShape?.shape) {
+            case "rect":
+              const updatedParams = { ...this.selectedShape.params };
+              const { startX, startY, width, height } = updatedParams;
+              const { newX, newY, newW, newH } = this.correctRectangleParams(
+                e,
+                startX,
+                startY
+              );
+              updatedParams.startX = newX;
+              updatedParams.startY = newY;
+              updatedParams.width = newW;
+              updatedParams.height = newH;
 
-              case "circle":
-                const { startX: cx, startY: cy } = updatedParams;
-                updatedParams.startX = cx + e.clientX - this.startX;
-                updatedParams.startY = cy + e.clientY - this.startY;
-                break;
+              this.updateShape(this.selectedShape, updatedParams);
 
-              case "line":
-                console.log("line", updatedParams);
-                const {
-                  startX: x0,
-                  startY: y0,
-                  endX: x1,
-                  endY: y1,
-                } = updatedParams;
-                updatedParams.startX = x0 + (e.clientX - this.startX);
-                updatedParams.startY = y0 + (e.clientY - this.startY);
-                updatedParams.endX = x1 + (e.clientX - this.startX);
-                updatedParams.endY = y1 + (e.clientY - this.startY);
-                break;
+              break;
 
-              default:
-                break;
-            }
-
-            this.updateShape(this.selectedShape, updatedParams);
-            this.clear();
+            default:
+              break;
           }
         }
-
         break;
 
       default:
@@ -377,5 +505,26 @@ export class Offline {
     this.existingShapes[index].params = updatedParams;
     localStorage.removeItem("existingShapes");
     localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
+  };
+
+  correctRectangleParams = (e: MouseEvent, x: number, y: number) => {
+    let w = e.clientX - x;
+    let h = e.clientY - y;
+    if (e.clientX < x && e.clientY < y) {
+      x = e.clientX;
+      y = e.clientY;
+      w = -w;
+      h = -h;
+    }
+    if (e.clientX < x && e.clientY > y) {
+      x = e.clientX;
+      w = -w;
+    }
+    if (e.clientX > x && e.clientY < y) {
+      y = e.clientY;
+      h = -h;
+    }
+
+    return { newX: x, newY: y, newW: w, newH: h };
   };
 }
