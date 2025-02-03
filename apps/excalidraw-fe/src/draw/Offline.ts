@@ -13,6 +13,8 @@ export class Offline {
   private selectedShape: Shape | null = null;
   private selectedShapeOffSetX: number = 0;
   private selectedShapeOffSetY: number = 0;
+  private panOffSetX: number = 0;
+  private panOffSetY: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -42,7 +44,6 @@ export class Offline {
     if (this.selectedTool === "select") {
       this.action = "move";
     }
-    console.log(this.selectedTool);
   }
 
   initMouseHandlers() {
@@ -50,6 +51,7 @@ export class Offline {
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseleave", this.handleMouseLeave);
+    this.canvas.addEventListener("wheel", this.handleMouseWheel);
   }
 
   destroy() {
@@ -59,6 +61,8 @@ export class Offline {
   }
 
   handleMouseDown = (e: MouseEvent) => {
+    const { clientX, clientY } = this.getMouseCoordinates(e);
+
     if (e.button === 0) {
       this.leftMouseDown = true;
       this.rightMouseDown = false;
@@ -69,13 +73,13 @@ export class Offline {
       this.leftMouseDown = false;
     }
 
-    this.startX = e.clientX;
-    this.startY = e.clientY;
+    this.startX = clientX;
+    this.startY = clientY;
 
     if (this.selectedTool === "select") {
       if (this.action === "move") {
-        const x = e.clientX;
-        const y = e.clientY;
+        const x = clientX;
+        const y = clientY;
 
         this.existingShapes.forEach((s, index) => {
           switch (s.shape) {
@@ -125,7 +129,6 @@ export class Offline {
                 y > startY &&
                 y < startY + height
               ) {
-                console.log("move///");
                 this.selectedShape = s;
                 this.selectedShapeOffSetX = x - startX;
                 this.selectedShapeOffSetY = y - startY;
@@ -176,54 +179,77 @@ export class Offline {
         });
       }
     } else {
-      this.startX = e.clientX;
-      this.startY = e.clientY;
+      this.startX = clientX;
+      this.startY = clientY;
     }
   };
 
   handleMouseMove = (e: MouseEvent) => {
+    const { clientX, clientY } = this.getMouseCoordinates(e);
     if (this.leftMouseDown) {
       switch (this.selectedTool) {
         case "rect":
-          const width = e.clientX - this.startX;
-          const hei = e.clientY - this.startY;
+          const width = clientX - this.startX;
+          const hei = clientY - this.startY;
 
           this.clear();
           this.ctx.strokeStyle = "#ffffff";
-          this.ctx.strokeRect(this.startX, this.startY, width, hei);
+          this.ctx.strokeRect(
+            this.startX + this.panOffSetX,
+            this.startY + this.panOffSetY,
+            width,
+            hei
+          );
           break;
 
         case "circle":
-          const radius = Math.abs(e.clientX - this.startX);
+          const radius = Math.abs(clientX - this.startX);
           this.clear();
           this.ctx.beginPath();
           this.ctx.strokeStyle = "#ffffff";
-          this.ctx.arc(this.startX, this.startY, radius, 0, 2 * Math.PI);
+          this.ctx.arc(
+            this.startX + this.panOffSetX,
+            this.startY + this.panOffSetY,
+            radius,
+            0,
+            2 * Math.PI
+          );
           this.ctx.stroke();
           this.ctx.closePath();
           break;
 
         case "freehand":
           this.clear();
-          this.drawLine(this.startX, this.startY, e.clientX, e.clientY);
+          this.drawLine(
+            this.startX + this.panOffSetX,
+            this.startY + this.panOffSetY,
+            clientX + this.panOffSetX,
+            clientY + this.panOffSetY
+          );
+
           this.existingShapes.push({
             shape: "line",
             params: {
               startX: this.startX,
               startY: this.startY,
-              endX: e.clientX,
-              endY: e.clientY,
+              endX: clientX,
+              endY: clientY,
             },
           });
-          if (this.startX !== e.clientX && this.startY !== e.clientY) {
-            this.startX = e.clientX;
-            this.startY = e.clientY;
+          if (this.startX !== clientX && this.startY !== clientY) {
+            this.startX = clientX;
+            this.startY = clientY;
           }
           break;
 
         case "line":
           this.clear();
-          this.drawLine(this.startX, this.startY, e.clientX, e.clientY);
+          this.drawLine(
+            this.startX + this.panOffSetX,
+            this.startY + this.panOffSetY,
+            clientX + this.panOffSetX,
+            clientY + this.panOffSetY
+          );
 
           break;
 
@@ -233,30 +259,28 @@ export class Offline {
               const updatedParams = { ...this.selectedShape.params };
               switch (this.selectedShape.shape) {
                 case "rect":
-                  console.log("rect", updatedParams);
                   const { startX, startY } = updatedParams;
-                  updatedParams.startX = startX + e.clientX - this.startX;
-                  updatedParams.startY = startY + e.clientY - this.startY;
+                  updatedParams.startX = startX + clientX - this.startX;
+                  updatedParams.startY = startY + clientY - this.startY;
                   break;
 
                 case "circle":
                   const { startX: cx, startY: cy } = updatedParams;
-                  updatedParams.startX = cx + e.clientX - this.startX;
-                  updatedParams.startY = cy + e.clientY - this.startY;
+                  updatedParams.startX = cx + clientX - this.startX;
+                  updatedParams.startY = cy + clientY - this.startY;
                   break;
 
                 case "line":
-                  console.log("line in move", updatedParams);
                   const {
                     startX: x0,
                     startY: y0,
                     endX: x1,
                     endY: y1,
                   } = updatedParams;
-                  updatedParams.startX = x0 + (e.clientX - this.startX);
-                  updatedParams.startY = y0 + (e.clientY - this.startY);
-                  updatedParams.endX = x1 + (e.clientX - this.startX);
-                  updatedParams.endY = y1 + (e.clientY - this.startY);
+                  updatedParams.startX = x0 + (clientX - this.startX);
+                  updatedParams.startY = y0 + (clientY - this.startY);
+                  updatedParams.endX = x1 + (clientX - this.startX);
+                  updatedParams.endY = y1 + (clientY - this.startY);
                   break;
 
                 default:
@@ -269,27 +293,24 @@ export class Offline {
               this.clear();
             }
           } else if (this.action === "resize") {
-            console.log("resizehappening");
             if (this.selectedShape) {
               const updatedParams = { ...this.selectedShape.params };
               switch (this.selectedShape.shape) {
                 case "rect":
-                  console.log("rect", updatedParams);
                   const { startX, startY, width, height } = updatedParams;
-                  updatedParams.width = e.clientX - startX;
-                  updatedParams.height = e.clientY - startY;
+                  updatedParams.width = clientX - startX;
+                  updatedParams.height = clientY - startY;
                   break;
 
                 case "circle":
                   const { startX: cx, startY: cy } = updatedParams;
-                  const radius = this.distance(cx, cy, e.clientX, e.clientY);
+                  const radius = this.distance(cx, cy, clientX, clientY);
                   updatedParams.radius = radius;
                   break;
 
                 case "line":
-                  console.log("line in move", updatedParams);
-                  updatedParams.endX = e.clientX;
-                  updatedParams.endY = e.clientY;
+                  updatedParams.endX = clientX;
+                  updatedParams.endY = clientY;
                   break;
 
                 default:
@@ -313,6 +334,8 @@ export class Offline {
   };
 
   handleMouseUp = (e: MouseEvent) => {
+    const { clientX, clientY } = this.getMouseCoordinates(e);
+
     // this.clicked = false;
     this.leftMouseDown = false;
     this.rightMouseDown = false;
@@ -338,7 +361,7 @@ export class Offline {
         break;
 
       case "circle":
-        const radius = Math.abs(e.clientX - this.startX);
+        const radius = Math.abs(clientX - this.startX);
         this.existingShapes.push({
           shape: "circle",
           params: {
@@ -358,8 +381,8 @@ export class Offline {
           params: {
             startX: this.startX,
             startY: this.startY,
-            endX: e.clientX,
-            endY: e.clientY,
+            endX: clientX,
+            endY: clientY,
           },
         });
 
@@ -371,8 +394,8 @@ export class Offline {
           params: {
             startX: this.startX,
             startY: this.startY,
-            endX: e.clientX,
-            endY: e.clientY,
+            endX: clientX,
+            endY: clientY,
           },
         });
 
@@ -403,6 +426,7 @@ export class Offline {
               break;
           }
         }
+        this.selectedShape = null;
         break;
 
       default:
@@ -411,6 +435,14 @@ export class Offline {
 
     localStorage.removeItem("existingShapes");
     localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
+  };
+
+  handleMouseWheel = (e: WheelEvent) => {
+    this.panOffSetX += -e.deltaX;
+    this.panOffSetY += -e.deltaY;
+
+    // console.log("mousewheel", this.panOffSetX, this.panOffSetY);
+    this.clear();
   };
 
   handleMouseLeave = (e: MouseEvent) => {
@@ -451,6 +483,11 @@ export class Offline {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "rgba(0, 0, 0)";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.fillStyle = "rgba(255, 255, 255)";
+    this.ctx.save();
+    this.ctx.translate(this.panOffSetX, this.panOffSetY);
+
     if (this.existingShapes) {
       this.existingShapes.forEach((s) => {
         switch (s.shape) {
@@ -473,6 +510,20 @@ export class Offline {
         }
       });
     }
+
+    this.ctx.restore();
+  };
+
+  getMouseCoordinates = (e: MouseEvent) => {
+    // console.log("panOffSet", this.panOffSetX, this.panOffSetY);
+    // console.log("mouse", e.clientX, e.clientY);
+
+    const clientX = e.clientX - this.panOffSetX;
+    const clientY = e.clientY - this.panOffSetY;
+
+    // console.log("mouseeee", clientX, clientY);
+
+    return { clientX, clientY };
   };
 
   distance = (x0: number, y0: number, x1: number, y1: number) => {
@@ -508,20 +559,21 @@ export class Offline {
   };
 
   correctRectangleParams = (e: MouseEvent, x: number, y: number) => {
-    let w = e.clientX - x;
-    let h = e.clientY - y;
-    if (e.clientX < x && e.clientY < y) {
-      x = e.clientX;
-      y = e.clientY;
+    const { clientX, clientY } = this.getMouseCoordinates(e);
+    let w = clientX - x;
+    let h = clientY - y;
+    if (clientX < x && clientY < y) {
+      x = clientX;
+      y = clientY;
       w = -w;
       h = -h;
     }
-    if (e.clientX < x && e.clientY > y) {
-      x = e.clientX;
+    if (clientX < x && clientY > y) {
+      x = clientX;
       w = -w;
     }
-    if (e.clientX > x && e.clientY < y) {
-      y = e.clientY;
+    if (clientX > x && clientY < y) {
+      y = clientY;
       h = -h;
     }
 
