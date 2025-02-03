@@ -15,6 +15,9 @@ export class Offline {
   private selectedShapeOffSetY: number = 0;
   private panOffSetX: number = 0;
   private panOffSetY: number = 0;
+  private scale: number = 1;
+  private scaleOffSetX: number = 0;
+  private scaleOffSetY: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -192,13 +195,20 @@ export class Offline {
           const width = clientX - this.startX;
           const hei = clientY - this.startY;
 
+          // (e.clientX - this.panOffSetX * this.scale + this.scaleOffSetX) /
+          //   this.scale;
+
           this.clear();
           this.ctx.strokeStyle = "#ffffff";
           this.ctx.strokeRect(
-            this.startX + this.panOffSetX,
-            this.startY + this.panOffSetY,
-            width,
-            hei
+            this.startX * this.scale +
+              this.panOffSetX * this.scale -
+              this.scaleOffSetX,
+            this.startY * this.scale +
+              this.panOffSetY * this.scale -
+              this.scaleOffSetY,
+            width * this.scale,
+            hei * this.scale
           );
           break;
 
@@ -208,9 +218,9 @@ export class Offline {
           this.ctx.beginPath();
           this.ctx.strokeStyle = "#ffffff";
           this.ctx.arc(
-            this.startX + this.panOffSetX,
-            this.startY + this.panOffSetY,
-            radius,
+            (this.startX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (this.startY + this.panOffSetY) * this.scale - this.scaleOffSetY,
+            radius * this.scale,
             0,
             2 * Math.PI
           );
@@ -221,10 +231,10 @@ export class Offline {
         case "freehand":
           this.clear();
           this.drawLine(
-            this.startX + this.panOffSetX,
-            this.startY + this.panOffSetY,
-            clientX + this.panOffSetX,
-            clientY + this.panOffSetY
+            (this.startX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (this.startY + this.panOffSetY) * this.scale - this.scaleOffSetY,
+            (clientX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (clientY + this.panOffSetY) * this.scale - this.scaleOffSetY
           );
 
           this.existingShapes.push({
@@ -245,10 +255,10 @@ export class Offline {
         case "line":
           this.clear();
           this.drawLine(
-            this.startX + this.panOffSetX,
-            this.startY + this.panOffSetY,
-            clientX + this.panOffSetX,
-            clientY + this.panOffSetY
+            (this.startX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (this.startY + this.panOffSetY) * this.scale - this.scaleOffSetY,
+            (clientX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (clientY + this.panOffSetY) * this.scale - this.scaleOffSetY
           );
 
           break;
@@ -438,10 +448,20 @@ export class Offline {
   };
 
   handleMouseWheel = (e: WheelEvent) => {
-    this.panOffSetX += -e.deltaX;
-    this.panOffSetY += -e.deltaY;
+    e.preventDefault();
+    if (e.shiftKey) {
+      this.panOffSetX += -e.deltaY;
+    } else if (e.ctrlKey || e.metaKey) {
+      this.scale = Math.min(Math.max(0.1, this.scale - e.deltaY * 0.01), 20);
+      let scaledWidth = this.canvas.width * this.scale;
+      let scaledHeight = this.canvas.height * this.scale;
+      this.scaleOffSetX = (scaledWidth - this.canvas.width) / 2;
+      this.scaleOffSetY = (scaledHeight - this.canvas.height) / 2;
+    } else {
+      this.panOffSetX += -e.deltaX;
+      this.panOffSetY += -e.deltaY;
+    }
 
-    // console.log("mousewheel", this.panOffSetX, this.panOffSetY);
     this.clear();
   };
 
@@ -486,7 +506,11 @@ export class Offline {
 
     this.ctx.fillStyle = "rgba(255, 255, 255)";
     this.ctx.save();
-    this.ctx.translate(this.panOffSetX, this.panOffSetY);
+    this.ctx.translate(
+      this.panOffSetX * this.scale - this.scaleOffSetX,
+      this.panOffSetY * this.scale - this.scaleOffSetY
+    );
+    this.ctx.scale(this.scale, this.scale);
 
     if (this.existingShapes) {
       this.existingShapes.forEach((s) => {
@@ -515,13 +539,12 @@ export class Offline {
   };
 
   getMouseCoordinates = (e: MouseEvent) => {
-    // console.log("panOffSet", this.panOffSetX, this.panOffSetY);
-    // console.log("mouse", e.clientX, e.clientY);
-
-    const clientX = e.clientX - this.panOffSetX;
-    const clientY = e.clientY - this.panOffSetY;
-
-    // console.log("mouseeee", clientX, clientY);
+    const clientX =
+      (e.clientX - this.panOffSetX * this.scale + this.scaleOffSetX) /
+      this.scale;
+    const clientY =
+      (e.clientY - this.panOffSetY * this.scale + this.scaleOffSetY) /
+      this.scale;
 
     return { clientX, clientY };
   };
