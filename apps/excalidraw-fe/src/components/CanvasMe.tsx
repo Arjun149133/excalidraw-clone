@@ -31,6 +31,13 @@ const Canvas = () => {
     };
   }, [canvasRef.current, windowSize]);
 
+  const handleUndo = () => {
+    offline?.setHistoryIndexMinus();
+  };
+  const handleRedo = () => {
+    offline?.setHistoryIndexPlus();
+  };
+
   return (
     <>
       <div className=" absolute top-2 left-5">
@@ -50,6 +57,8 @@ const Canvas = () => {
           canvas={canvasRef.current}
           scale={scale}
           setScale={setScale}
+          setHistoryIndexMinus={handleUndo}
+          setHistoryIndexPlus={handleRedo}
         />
       </div>
     </>

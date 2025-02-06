@@ -18,6 +18,9 @@ export class Offline {
   public scale: number = 1;
   private scaleOffSetX: number = 0;
   private scaleOffSetY: number = 0;
+  private history: Shape[][] = [];
+  private historyIndex: number = 0;
+  private existingShapesLength: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -35,8 +38,13 @@ export class Offline {
     }
 
     const shapes: Shape[] = JSON.parse(shapesString);
-    this.existingShapes = shapes;
+    this.existingShapes = [...shapes];
+    this.existingShapesLength = shapes.length;
+    this.history = [];
+    this.historyIndex = -1;
 
+    this.updateHistory(this.existingShapes);
+    console.log("where", this.history.length, this.historyIndex, this.history);
     this.clear();
   }
 
@@ -56,6 +64,34 @@ export class Offline {
     this.scaleOffSetX = (scaledWidth - this.canvas.width) / 2;
     this.scaleOffSetY = (scaledHeight - this.canvas.height) / 2;
     this.clear();
+  }
+
+  setHistoryIndexPlus() {
+    if (this.historyIndex < this.history.length - 1) {
+      this.historyIndex++;
+      this.existingShapes = [...this.history[this.historyIndex]];
+      this.updateLocalStorage();
+      console.log("indie", this.historyIndex);
+      this.clear();
+    }
+  }
+
+  setHistoryIndexMinus() {
+    if (this.historyIndex > 0) {
+      this.historyIndex--;
+      this.existingShapes = [...this.history[this.historyIndex]];
+      this.updateLocalStorage();
+      this.clear();
+    }
+  }
+
+  updateLocalStorage() {
+    localStorage.removeItem("existingShapes");
+    localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
+  }
+
+  resetHistory() {
+    this.history = [...this.history.slice(0, this.historyIndex + 1)];
   }
 
   initMouseHandlers() {
@@ -89,6 +125,8 @@ export class Offline {
     this.startY = clientY;
 
     if (this.selectedTool === "select") {
+      this.updateHistory(this.existingShapes);
+      console.log("history", this.history);
       if (this.action === "move") {
         const x = clientX;
         const y = clientY;
@@ -373,6 +411,7 @@ export class Offline {
           },
         });
 
+        this.updateHistory(this.existingShapes);
         this.clear();
         break;
 
@@ -387,6 +426,7 @@ export class Offline {
           },
         });
 
+        this.updateHistory(this.existingShapes);
         this.clear();
 
         break;
@@ -415,6 +455,9 @@ export class Offline {
           },
         });
 
+        this.updateHistory(this.existingShapes);
+        this.clear();
+
         break;
 
       case "select":
@@ -435,6 +478,7 @@ export class Offline {
               updatedParams.height = newH;
 
               this.updateShape(this.selectedShape, updatedParams);
+              this.updateHistory(this.existingShapes);
 
               break;
 
@@ -442,6 +486,9 @@ export class Offline {
               break;
           }
         }
+
+        console.log("up", this.history);
+
         this.selectedShape = null;
         break;
 
@@ -449,8 +496,7 @@ export class Offline {
         break;
     }
 
-    localStorage.removeItem("existingShapes");
-    localStorage.setItem("existingShapes", JSON.stringify(this.existingShapes));
+    this.updateLocalStorage();
   };
 
   handleMouseWheel = (e: WheelEvent) => {
@@ -496,6 +542,7 @@ export class Offline {
 
   drawRect = (x: number, y: number, width: number, height: number) => {
     this.ctx.strokeStyle = "#ffffff";
+    this.ctx.lineWidth = 1;
     this.ctx.strokeRect(x, y, width, height);
   };
 
@@ -503,6 +550,17 @@ export class Offline {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
   };
+
+  updateHistory(newShapes: Shape[]): void {
+    this.resetHistory();
+    const newExistingShapes = newShapes.map((s) => {
+      return { ...s };
+    });
+    this.history.push([...this.existingShapes]);
+
+    this.existingShapes = [...newExistingShapes];
+    this.historyIndex++;
+  }
 
   clear = () => {
     //resize()
