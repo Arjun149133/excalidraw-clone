@@ -1,14 +1,16 @@
 "use client";
 import { Offline } from "@/draw/Offline";
 import { Tool } from "@/utils/types";
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
+import Bottombar from "./Bottombar";
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [offline, setOffline] = useState<Offline>();
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
+  const [scale, setScale] = useState(1);
   const windowSize = useWindowSize();
 
   useEffect(() => {
@@ -16,11 +18,14 @@ const Canvas = () => {
   }, [selectedTool]);
 
   useEffect(() => {
+    offline?.setScale(scale);
+  }, [scale]);
+
+  useEffect(() => {
     if (!canvasRef.current) return;
     const o = new Offline(canvasRef.current);
 
     setOffline(o);
-
     return () => {
       o.destroy();
     };
@@ -40,6 +45,13 @@ const Canvas = () => {
           height: windowSize.height,
         }}
       ></canvas>
+      <div className=" absolute bottom-4 left-5 text-white">
+        <Bottombar
+          canvas={canvasRef.current}
+          scale={scale}
+          setScale={setScale}
+        />
+      </div>
     </>
   );
 };

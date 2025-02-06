@@ -15,7 +15,7 @@ export class Offline {
   private selectedShapeOffSetY: number = 0;
   private panOffSetX: number = 0;
   private panOffSetY: number = 0;
-  private scale: number = 1;
+  public scale: number = 1;
   private scaleOffSetX: number = 0;
   private scaleOffSetY: number = 0;
 
@@ -47,6 +47,15 @@ export class Offline {
     if (this.selectedTool === "select") {
       this.action = "move";
     }
+  }
+
+  setScale(scale: number) {
+    this.scale = scale;
+    let scaledWidth = this.canvas.width * this.scale;
+    let scaledHeight = this.canvas.height * this.scale;
+    this.scaleOffSetX = (scaledWidth - this.canvas.width) / 2;
+    this.scaleOffSetY = (scaledHeight - this.canvas.height) / 2;
+    this.clear();
   }
 
   initMouseHandlers() {
@@ -194,9 +203,6 @@ export class Offline {
         case "rect":
           const width = clientX - this.startX;
           const hei = clientY - this.startY;
-
-          // (e.clientX - this.panOffSetX * this.scale + this.scaleOffSetX) /
-          //   this.scale;
 
           this.clear();
           this.ctx.strokeStyle = "#ffffff";
