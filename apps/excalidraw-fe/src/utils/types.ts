@@ -32,4 +32,10 @@ export type Shape =
         endX: number;
         endY: number;
       };
+    }
+  | {
+      shape: "freehand";
+      params: {
+        points: { x: number; y: number; pressure: number }[];
+      };
     };

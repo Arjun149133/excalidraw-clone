@@ -1,4 +1,6 @@
+import { getSvgPathFromStroke } from "@/utils/getSvgPath";
 import { Shape, Tool } from "@/utils/types";
+import getStroke from "perfect-freehand";
 
 export class Offline {
   private canvas: HTMLCanvasElement;
@@ -20,7 +22,8 @@ export class Offline {
   private scaleOffSetY: number = 0;
   private history: Shape[][] = [];
   private historyIndex: number = 0;
-  private existingShapesLength: number = 0;
+  private points: { x: number; y: number; pressure: number }[] = [];
+  private showPoints: { x: number; y: number; pressure: number }[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -39,12 +42,10 @@ export class Offline {
 
     const shapes: Shape[] = JSON.parse(shapesString);
     this.existingShapes = [...shapes];
-    this.existingShapesLength = shapes.length;
     this.history = [];
     this.historyIndex = -1;
 
     this.updateHistory(this.existingShapes);
-    console.log("where", this.history.length, this.historyIndex, this.history);
     this.clear();
   }
 
@@ -71,7 +72,6 @@ export class Offline {
       this.historyIndex++;
       this.existingShapes = [...this.history[this.historyIndex]];
       this.updateLocalStorage();
-      console.log("indie", this.historyIndex);
       this.clear();
     }
   }
@@ -123,6 +123,23 @@ export class Offline {
 
     this.startX = clientX;
     this.startY = clientY;
+
+    if (this.selectedTool === "freehand") {
+      console.log("we are here");
+      this.points = [];
+      this.showPoints.push({
+        x: (clientX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+        y: (clientY + this.panOffSetY) * this.scale - this.scaleOffSetY,
+        pressure: 1,
+      });
+      this.points.push({
+        x: clientX,
+        y: clientY,
+        pressure: 1,
+      });
+
+      this.renderFreehand(this.showPoints);
+    }
 
     if (this.selectedTool === "select") {
       this.updateHistory(this.existingShapes);
@@ -223,14 +240,13 @@ export class Offline {
               }
               break;
 
+            case "freehand":
+
             default:
               break;
           }
         });
       }
-    } else {
-      this.startX = clientX;
-      this.startY = clientY;
     }
   };
 
@@ -245,12 +261,8 @@ export class Offline {
           this.clear();
           this.ctx.strokeStyle = "#ffffff";
           this.ctx.strokeRect(
-            this.startX * this.scale +
-              this.panOffSetX * this.scale -
-              this.scaleOffSetX,
-            this.startY * this.scale +
-              this.panOffSetY * this.scale -
-              this.scaleOffSetY,
+            (this.startX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            (this.startY + this.panOffSetY) * this.scale - this.scaleOffSetY,
             width * this.scale,
             hei * this.scale
           );
@@ -273,27 +285,17 @@ export class Offline {
           break;
 
         case "freehand":
-          this.clear();
-          this.drawLine(
-            (this.startX + this.panOffSetX) * this.scale - this.scaleOffSetX,
-            (this.startY + this.panOffSetY) * this.scale - this.scaleOffSetY,
-            (clientX + this.panOffSetX) * this.scale - this.scaleOffSetX,
-            (clientY + this.panOffSetY) * this.scale - this.scaleOffSetY
-          );
-
-          this.existingShapes.push({
-            shape: "line",
-            params: {
-              startX: this.startX,
-              startY: this.startY,
-              endX: clientX,
-              endY: clientY,
-            },
+          this.showPoints.push({
+            x: (clientX + this.panOffSetX) * this.scale - this.scaleOffSetX,
+            y: (clientY + this.panOffSetY) * this.scale - this.scaleOffSetY,
+            pressure: 1,
           });
-          if (this.startX !== clientX && this.startY !== clientY) {
-            this.startX = clientX;
-            this.startY = clientY;
-          }
+          this.points.push({
+            x: clientX,
+            y: clientY,
+            pressure: 1,
+          });
+          this.renderFreehand(this.showPoints);
           break;
 
         case "line":
@@ -433,16 +435,14 @@ export class Offline {
 
       case "freehand":
         this.existingShapes.push({
-          shape: "line",
-          params: {
-            startX: this.startX,
-            startY: this.startY,
-            endX: clientX,
-            endY: clientY,
-          },
+          shape: "freehand",
+          params: { points: this.points },
         });
+        this.points = [];
+        this.showPoints = [];
 
-        this.clear();
+        this.updateHistory(this.existingShapes);
+        break;
 
       case "line":
         this.existingShapes.push({
@@ -546,6 +546,19 @@ export class Offline {
     this.ctx.strokeRect(x, y, width, height);
   };
 
+  renderFreehand = (points: any) => {
+    const outlinePoints = getStroke(points, {
+      size: 3,
+      thinning: 0.5,
+      smoothing: 0.5,
+      streamline: 0.5,
+    });
+    const pathData = getSvgPathFromStroke(outlinePoints);
+    const path = new Path2D(pathData);
+
+    this.ctx.fill(path);
+  };
+
   resize = () => {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
@@ -556,7 +569,7 @@ export class Offline {
     const newExistingShapes = newShapes.map((s) => {
       return { ...s };
     });
-    this.history.push([...this.existingShapes]);
+    this.history.push([...newExistingShapes]);
 
     this.existingShapes = [...newExistingShapes];
     this.historyIndex++;
@@ -591,6 +604,10 @@ export class Offline {
             const { startX: lineX, startY: lineY, endX, endY } = s.params;
             this.drawLine(lineX, lineY, endX, endY);
 
+            break;
+          case "freehand":
+            const points = s.params.points;
+            this.renderFreehand(points);
             break;
 
           default:
