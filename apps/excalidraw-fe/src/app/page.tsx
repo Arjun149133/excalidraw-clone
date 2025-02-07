@@ -5,16 +5,71 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Pencil, Users, LogOut, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import axios from "axios";
+import { HTTP_BACKEND_URL } from "@/config";
+
+interface RoomNameForm {
+  name: string;
+}
+interface RoomIdForm {
+  roomId: string;
+}
 
 export default function Dashboard() {
   const router = useRouter();
   const [showRoomDialog, setShowRoomDialog] = useState(false);
   const [roomAction, setRoomAction] = useState<"create" | "join" | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const { register, handleSubmit } = useForm<RoomNameForm | RoomIdForm>();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     setToken(localStorage.getItem("token"));
   }, []);
+
+  const onsubmit = async (data: RoomNameForm | RoomIdForm) => {
+    console.log(data);
+    if (roomAction === "create") {
+      try {
+        const res = await axios.post(`${HTTP_BACKEND_URL}/room/create`, data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(res.data);
+        router.push(`/canvas/collab/${res.data.room.id}`);
+        setShowRoomDialog(false);
+      } catch (error) {
+        console.log(error);
+        //@ts-ignore
+        setServerError(error.response.data.message);
+      }
+    }
+
+    if (roomAction === "join") {
+      try {
+        const res = await axios.get(
+          //@ts-ignore
+          `${HTTP_BACKEND_URL}/room/join/${data.roomId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log(res.data);
+        router.push(`/canvas/collab/${res.data.roomId}`);
+        setShowRoomDialog(false);
+      } catch (error) {
+        console.log(error);
+        //@ts-ignore
+        setServerError(error.response.data.message);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -32,7 +87,10 @@ export default function Dashboard() {
           ) : (
             <div>
               <button
-                onClick={() => router.push("/login")}
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  setToken(null);
+                }}
                 className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
               >
                 <LogOut className="w-5 h-5" />
@@ -134,23 +192,31 @@ export default function Dashboard() {
                 )}
               </div>
             ) : (
-              <>
+              <form onSubmit={handleSubmit(onsubmit)} className=" relative">
                 <h3 className="text-2xl font-bold mb-6 text-center">
                   {roomAction === "create" ? "Create a Room" : "Join a Room"}
                 </h3>
-                <input
-                  type="text"
-                  placeholder={
-                    roomAction === "create" ? "Room name" : "Room code"
-                  }
-                  className="w-full p-3 bg-gray-700 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+                <div className=" mb-4">
+                  <input
+                    {...register(
+                      `${roomAction === "create" ? "name" : "roomId"}`
+                    )}
+                    type="text"
+                    placeholder={
+                      roomAction === "create" ? "Room name" : "Room code"
+                    }
+                    className="w-full p-3 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  {roomAction === "create" && (
+                    <span className=" text-sm text-gray-500">
+                      Room name should be unique with length greater than 2.
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => {
-                      setShowRoomDialog(false);
-                      router.push("/collaborative-canvas");
-                    }}
+                    type="submit"
                     className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors"
                   >
                     {roomAction === "create" ? "Create" : "Join"}
@@ -162,7 +228,12 @@ export default function Dashboard() {
                     Back
                   </button>
                 </div>
-              </>
+                <div className=" flex justify-center mt-1">
+                  {serverError && (
+                    <p className="text-red-500 text-sm mt-2">{serverError}</p>
+                  )}
+                </div>
+              </form>
             )}
           </motion.div>
         </div>

@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, User, Mail, Lock } from "lucide-react";
+import axios from "axios";
+import { HTTP_BACKEND_URL } from "@/config";
 
 interface RegisterForm {
   name: string;
@@ -15,10 +17,24 @@ export default function Register() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<RegisterForm>();
   const [isMounted, setIsMounted] = React.useState(false);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const onSubmit = (data: RegisterForm) => {
-    console.log(data);
-    router.push("/");
+  const onSubmit = async (data: RegisterForm) => {
+    try {
+      console.log(data);
+      const res = await axios.post(`${HTTP_BACKEND_URL}/auth/register`, data);
+      console.log(res.data);
+
+      if (res.status === 201) {
+        router.push("/login");
+      } else {
+        console.log("we are here");
+        setServerError(res.data.message);
+      }
+    } catch (error) {
+      //@ts-ignore
+      setServerError(error.response.data.message);
+    }
   };
 
   React.useEffect(() => {
@@ -52,9 +68,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">
-                Full Name
-              </label>
+              <label className="text-sm font-medium text-gray-300">Name</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -75,6 +89,7 @@ export default function Register() {
                   type="email"
                   className="w-full bg-gray-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
                   placeholder="Enter your email"
+                  required={true}
                 />
               </div>
             </div>
@@ -90,16 +105,27 @@ export default function Register() {
                   type="password"
                   className="w-full bg-gray-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
                   placeholder="Create a password"
+                  required={true}
                 />
+                <p className=" absolute text-xs text-gray-500 top-full">
+                  password length should be greater than 6
+                </p>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-pink-600 hover:bg-pink-700 py-3 rounded-lg font-semibold transition-colors"
-            >
-              Create Account
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                className="w-full bg-pink-600 hover:bg-pink-700 py-3 rounded-lg font-semibold transition-colors "
+              >
+                Create Account
+              </button>
+              {serverError && (
+                <p className="text-red-500 text-sm mt-2 w-full flex justify-center">
+                  {serverError}
+                </p>
+              )}
+            </div>
           </form>
 
           <div className="mt-6 text-center text-gray-400">

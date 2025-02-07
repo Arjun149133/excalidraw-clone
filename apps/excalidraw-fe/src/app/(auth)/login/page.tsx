@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, Mail, Lock } from "lucide-react";
+import { HTTP_BACKEND_URL } from "@/config";
+import axios from "axios";
 
 interface LoginForm {
   email: string;
@@ -15,10 +17,22 @@ export default function Login() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginForm>();
   const [isMounted, setIsMounted] = React.useState(false);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const onSubmit = (data: LoginForm) => {
-    console.log(data);
-    router.push("/");
+  const onSubmit = async (data: LoginForm) => {
+    try {
+      const res = await axios.post(`${HTTP_BACKEND_URL}/auth/login`, data);
+      console.log(res);
+
+      if (res.status === 200) {
+        const token = res.data.token;
+        localStorage.setItem("token", token);
+        router.push("/");
+      }
+    } catch (error: any) {
+      console.error(error);
+      setServerError(error.response.data.message);
+    }
   };
 
   useEffect(() => {
@@ -55,10 +69,11 @@ export default function Login() {
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   {...register("email")}
-                  type="password"
+                  type="email"
                   className="w-full bg-gray-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Enter your password"
                   defaultValue={""}
+                  required={true}
                 />
               </div>
             </div>
@@ -75,16 +90,24 @@ export default function Login() {
                   className="w-full bg-gray-700 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Enter your password"
                   defaultValue={""}
+                  required={true}
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold transition-colors"
-            >
-              Sign In
-            </button>
+            <div>
+              <button
+                type="submit"
+                className="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Sign In
+              </button>
+              {serverError && (
+                <div className="text-center text-red-400 mt-2">
+                  {serverError}
+                </div>
+              )}
+            </div>
           </form>
 
           <div className="mt-6 text-center text-gray-400">

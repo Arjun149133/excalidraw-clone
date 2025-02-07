@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import db from "../db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "@repo/common/types";
 
@@ -81,7 +81,7 @@ const loginHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const isPasswordValid = bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       res.status(400).json({
         message: "Invalid credentials",

@@ -11,6 +11,6 @@ app.use(cors());
 app.use("/auth", authRouter);
 app.use("/room", roomRouter);
 
-app.listen(5000, () => {
-  console.log("http-backend on port 5000");
+app.listen(3001, () => {
+  console.log("http-backend on port 3001");
 });

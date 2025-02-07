@@ -46,6 +46,38 @@ const createRoomHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const joinRoomHandler = async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.params;
+
+    if (!roomId) {
+      res.status(400).json({
+        message: "no roomId provided",
+      });
+      return;
+    }
+
+    const room = await db.room.findFirst({
+      where: {
+        id: parseInt(roomId),
+      },
+    });
+
+    if (!room) {
+      res.status(404).json({
+        message: "Room not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      roomId: room.id,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 export const getRoomChats = async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
