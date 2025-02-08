@@ -1,5 +1,4 @@
 import SharedCanvas from "@/components/SharedCanvas";
-import Topbar from "@/components/Topbar";
 
 const CanvasCollabPage = async ({
   params,
@@ -7,6 +6,10 @@ const CanvasCollabPage = async ({
   params: Promise<{ roomId: string }>;
 }) => {
   const roomId = (await params).roomId;
+
+  if (!roomId) {
+    return <div>no room id</div>;
+  }
 
   return (
     <div className=" overflow-hidden">

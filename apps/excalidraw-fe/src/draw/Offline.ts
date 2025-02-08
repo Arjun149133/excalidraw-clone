@@ -143,7 +143,6 @@ export class Offline {
 
     if (this.selectedTool === "select") {
       this.updateHistory(this.existingShapes);
-      console.log("history", this.history);
       if (this.action === "move") {
         const x = clientX;
         const y = clientY;
@@ -241,6 +240,23 @@ export class Offline {
               break;
 
             case "freehand":
+              const { points } = s.params;
+              console.log("points", points);
+              points.some((p) => {
+                if (Math.abs(p.x - x) < 5 && Math.abs(p.y - y) < 5) {
+                  this.selectedShape = s;
+                }
+              });
+
+              this.selectedShapeOffSetX = clientX;
+              this.selectedShapeOffSetY = clientY;
+              console.log(
+                "so",
+                this.selectedShapeOffSetX,
+                this.selectedShapeOffSetY
+              );
+
+              break;
 
             default:
               break;
@@ -337,6 +353,18 @@ export class Offline {
                   updatedParams.startY = y0 + (clientY - this.startY);
                   updatedParams.endX = x1 + (clientX - this.startX);
                   updatedParams.endY = y1 + (clientY - this.startY);
+                  break;
+
+                case "freehand":
+                  const { points } = updatedParams;
+                  console.log("points lll", points);
+                  points.forEach((p) => {
+                    p.x += clientX - this.selectedShapeOffSetX;
+                    p.y += clientY - this.selectedShapeOffSetY;
+                  });
+
+                  this.selectedShapeOffSetX = clientX;
+                  this.selectedShapeOffSetY = clientY;
                   break;
 
                 default:

@@ -5,13 +5,18 @@ import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
+import { LoginButtons } from "@/app/page";
 
 const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [game, setGame] = useState<Game>();
-  const socket = useSocket(roomId);
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
   const windowSize = useWindowSize();
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("token")
+  );
+
+  const socket = useSocket(roomId);
 
   useEffect(() => {
     game?.setTool(selectedTool);
@@ -37,6 +42,15 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
 
   if (!socket) {
     <div className=" bg-black">connecting to server...</div>;
+  }
+
+  if (!token) {
+    return (
+      <div className=" h-screen flex flex-col space-y-3 justify-center items-center">
+        <h1 className=" text-4xl text-gray-600">Please login to continue</h1>
+        <LoginButtons />
+      </div>
+    );
   }
 
   return (

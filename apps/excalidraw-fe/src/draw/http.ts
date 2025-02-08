@@ -1,9 +1,8 @@
-import { token } from "@/hooks/useSocket";
-import { HTTP_URL } from "@/utils/config";
+import { HTTP_BACKEND_URL } from "@/config";
 import axios from "axios";
 
-export const getExistingShapes = async (roomId: string) => {
-  const res = await axios.get(`${HTTP_URL}/room/${roomId}/chats`, {
+export const getExistingShapes = async (roomId: string, token: string) => {
+  const res = await axios.get(`${HTTP_BACKEND_URL}/room/${roomId}/chats`, {
     headers: {
       Authorization: "Bearer " + token,
     },

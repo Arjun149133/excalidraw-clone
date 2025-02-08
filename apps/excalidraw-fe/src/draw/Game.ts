@@ -25,7 +25,10 @@ export class Game {
 
   async init() {
     try {
-      const result = await getExistingShapes(this.roomId);
+      const result = await getExistingShapes(
+        this.roomId,
+        localStorage.getItem("token")!
+      );
       const { existingChats } = result;
       existingChats.map((s: any) => {
         let shape: Shape = JSON.parse(s.message);

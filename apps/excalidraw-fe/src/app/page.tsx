@@ -242,7 +242,7 @@ export default function Dashboard() {
   );
 }
 
-const LoginButtons = () => {
+export const LoginButtons = () => {
   const router = useRouter();
 
   return (
