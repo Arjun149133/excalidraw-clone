@@ -26,10 +26,10 @@ const shapeButtons = [
     icon: DashLine,
     tool: "line",
   },
-  {
-    icon: EraserIcon,
-    tool: "eraser",
-  },
+  // { // TODO: Implement eraser
+  //   icon: EraserIcon,
+  //   tool: "eraser",
+  // },
   {
     icon: ArrowUpLeft,
     tool: "select",

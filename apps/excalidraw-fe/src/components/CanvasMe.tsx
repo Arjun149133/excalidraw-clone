@@ -1,7 +1,7 @@
 "use client";
 import { Offline } from "@/draw/Offline";
 import { Tool } from "@/utils/types";
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import Bottombar from "./Bottombar";

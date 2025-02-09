@@ -40,7 +40,6 @@ wss.on("connection", async (ws, req) => {
 
   ws.on("close", () => {
     console.log("Connection closed");
-    // Clean up user and room mappings
     const userIndex = users.findIndex((u) => u.ws === ws);
     if (userIndex !== -1) {
       const user = users[userIndex];
@@ -145,6 +144,7 @@ wss.on("connection", async (ws, req) => {
             JSON.stringify({
               type: "chat",
               roomId: roomId,
+              userId: userId,
               payload: {
                 shape: data.payload.shape,
                 params: data.payload.params,
