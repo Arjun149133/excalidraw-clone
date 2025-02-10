@@ -24,6 +24,7 @@ export class Canvas {
   private historyIndex: number = -1;
   private points: { x: number; y: number; pressure: number }[] = [];
   private showPoints: { x: number; y: number; pressure: number }[] = [];
+  private socketPoints: { x: number; y: number; pressure: number }[] = [];
   private width: number = 0;
   private height: number = 0;
   private radius: number = 0;
@@ -64,7 +65,9 @@ export class Canvas {
   }
 
   getFreeHandPoints() {
-    return this.points;
+    const returnPoints = [...this.socketPoints];
+    this.socketPoints = [];
+    return returnPoints;
   }
 
   getExistingShapes() {
@@ -486,6 +489,7 @@ export class Canvas {
           shape: "freehand",
           params: { points: this.points },
         });
+        this.socketPoints = [...this.points];
         this.points = [];
         this.showPoints = [];
 
@@ -545,6 +549,8 @@ export class Canvas {
       default:
         break;
     }
+
+    this.clear();
   };
 
   handleMouseWheel = (e: WheelEvent) => {

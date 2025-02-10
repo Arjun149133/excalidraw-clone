@@ -28,6 +28,11 @@ export class Game extends Canvas {
       const shapes: Shape[] = [];
       existingChats.map((s: any) => {
         let shape: Shape = JSON.parse(s.message);
+        if (shape.shape === "freehand") {
+          // @ts-ignore
+          const points = JSON.parse(shape.params.points);
+          shape.params.points = points;
+        }
         shapes.push(shape);
       });
       super.setExistingShapes(shapes);
@@ -47,11 +52,13 @@ export class Game extends Canvas {
       const decoded = jwt.decode(token) as any;
       this.userId = decoded.userId;
     }
+    this.clear();
   }
 
   initMouseHandlers(): void {
     super.initMouseHandlers();
     super.getCanvas().addEventListener("mouseup", this.handleParentMouseUp);
+    this.clear();
   }
 
   initSocketHandler() {
@@ -62,6 +69,12 @@ export class Game extends Canvas {
         const shape: Shape = data.payload;
         console.log("received shape", shape);
 
+        if (shape.shape === "freehand") {
+          // @ts-ignore
+          const points = JSON.parse(shape.params.points);
+          shape.params.points = points;
+        }
+
         super.setExistingShapes([...super.getExistingShapes(), shape]);
         this.clear();
       }
@@ -69,14 +82,13 @@ export class Game extends Canvas {
   }
 
   private handleParentMouseUp = (e: MouseEvent) => {
-    console.log("handleParentMouseUp");
+    this.clear();
     this.handleMouseUp(e);
 
     switch (super.getSelectedTool()) {
       case "rect":
         const { x, y } = super.getStartCoordinates();
         const { width, height } = super.getRectWidthHeight();
-        console.log("rect called", x, y, width, height);
         this.socket.send(
           JSON.stringify({
             type: "chat",
@@ -92,7 +104,7 @@ export class Game extends Canvas {
             },
           })
         );
-
+        this.clear();
         break;
       case "circle":
         const { x: x1, y: y1 } = super.getStartCoordinates();
@@ -111,6 +123,7 @@ export class Game extends Canvas {
             },
           })
         );
+        this.clear();
         break;
 
       case "line":
@@ -132,10 +145,17 @@ export class Game extends Canvas {
           })
         );
 
+        this.clear();
+
         break;
 
       case "freehand":
         const points = super.getFreeHandPoints();
+
+        if (points.length === 0) {
+          break;
+        }
+
         this.socket.send(
           JSON.stringify({
             type: "chat",
@@ -143,11 +163,15 @@ export class Game extends Canvas {
             payload: {
               shape: "freehand",
               params: {
-                points: points,
+                points: JSON.stringify(points),
               },
             },
           })
         );
+
+        this.clear();
+
+        break;
     }
 
     this.clear();
