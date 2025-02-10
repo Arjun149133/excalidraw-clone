@@ -114,18 +114,6 @@ export class Canvas {
     }
   }
 
-  cleanVariables() {
-    this.startX = 0;
-    this.startY = 0;
-    this.width = 0;
-    this.height = 0;
-    this.radius = 0;
-    this.endX = 0;
-    this.endY = 0;
-    this.points = [];
-    this.showPoints = [];
-  }
-
   resetHistory() {
     this.history = [...this.history.slice(0, this.historyIndex + 1)];
   }
@@ -159,6 +147,7 @@ export class Canvas {
 
     this.startX = clientX;
     this.startY = clientY;
+    console.log("start down", this.startX, this.startY);
 
     if (this.selectedTool === "freehand") {
       this.points = [];
@@ -397,8 +386,8 @@ export class Canvas {
                   break;
               }
 
-              this.startX = updatedParams.startX + this.selectedShapeOffSetX;
-              this.startY = updatedParams.startY + this.selectedShapeOffSetY;
+              this.startX = clientX;
+              this.startY = clientY;
               this.updateShape(this.selectedShape, updatedParams);
               this.clear();
             }
@@ -540,7 +529,6 @@ export class Canvas {
               updatedParams.height = newH;
 
               this.updateShape(this.selectedShape, updatedParams);
-              this.updateHistory(this.existingShapes);
 
               break;
 
@@ -627,6 +615,21 @@ export class Canvas {
   updateHistory(newShapes: Shape[]): void {
     this.resetHistory();
     const newExistingShapes = newShapes.map((s) => {
+      if (s.shape === "freehand") {
+        return {
+          ...s,
+          params: {
+            ...s.params,
+            points: s.params.points.map((p) => {
+              return {
+                x: p.x,
+                y: p.y,
+                pressure: p.pressure,
+              };
+            }),
+          },
+        };
+      }
       return { ...s };
     });
     this.history.push([...newExistingShapes]);
