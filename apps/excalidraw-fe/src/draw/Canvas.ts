@@ -48,6 +48,10 @@ export class Canvas {
     return this.canvas;
   }
 
+  getSelectedShape() {
+    return this.selectedShape;
+  }
+
   getStartCoordinates() {
     return { x: this.startX, y: this.startY };
   }
@@ -136,7 +140,6 @@ export class Canvas {
 
   handleMouseDown = (e: MouseEvent) => {
     const { clientX, clientY } = this.getMouseCoordinates(e);
-    console.log("down");
 
     if (e.button === 0) {
       this.leftMouseDown = true;
@@ -150,7 +153,6 @@ export class Canvas {
 
     this.startX = clientX;
     this.startY = clientY;
-    console.log("start down", this.startX, this.startY);
 
     if (this.selectedTool === "freehand") {
       this.points = [];
@@ -450,6 +452,8 @@ export class Canvas {
           this.startY
         );
 
+        this.startX = newX;
+        this.startY = newY;
         this.width = newW;
         this.height = newH;
 
@@ -541,16 +545,12 @@ export class Canvas {
           }
         }
 
-        console.log("up", this.history);
-
         this.selectedShape = null;
         break;
 
       default:
         break;
     }
-
-    this.clear();
   };
 
   handleMouseWheel = (e: WheelEvent) => {
@@ -572,8 +572,9 @@ export class Canvas {
   };
 
   handleMouseLeave = (e: MouseEvent) => {
-    //Todo
-    // this.clicked = false;
+    this.leftMouseDown = false;
+    this.rightMouseDown = false;
+    this.clear();
   };
 
   drawLine = (x0: number, y0: number, x1: number, y1: number) => {
@@ -729,7 +730,7 @@ export class Canvas {
     this.existingShapes[index].params = updatedParams;
   };
 
-  correctRectangleParams = (e: MouseEvent, x: number, y: number) => {
+  correctRectangleParams(e: MouseEvent, x: number, y: number) {
     const { clientX, clientY } = this.getMouseCoordinates(e);
     let w = clientX - x;
     let h = clientY - y;
@@ -749,5 +750,5 @@ export class Canvas {
     }
 
     return { newX: x, newY: y, newW: w, newH: h };
-  };
+  }
 }

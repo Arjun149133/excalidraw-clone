@@ -145,6 +145,7 @@ wss.on("connection", async (ws, req) => {
               type: "chat",
               roomId: roomId,
               userId: userId,
+              chatId: chat.id,
               payload: {
                 shape: data.payload.shape,
                 params: data.payload.params,

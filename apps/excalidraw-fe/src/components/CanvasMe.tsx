@@ -10,11 +10,17 @@ const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [offline, setOffline] = useState<Offline>();
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
+  const [cursor, setCursor] = useState<"crosshair" | "move">("crosshair");
   const [scale, setScale] = useState(1);
   const windowSize = useWindowSize();
 
   useEffect(() => {
     offline?.setTool(selectedTool);
+    if (selectedTool === "select") {
+      setCursor("move");
+    } else {
+      setCursor("crosshair");
+    }
   }, [selectedTool]);
 
   useEffect(() => {
@@ -51,6 +57,7 @@ const Canvas = () => {
           width: windowSize.width,
           height: windowSize.height,
         }}
+        className={`cursor-${cursor}`}
       ></canvas>
       <div className=" absolute bottom-4 left-5 text-white">
         <Bottombar

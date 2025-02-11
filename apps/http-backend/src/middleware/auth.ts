@@ -20,7 +20,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
     req.body.userId = decoded.userId;
     next();
   } catch (error) {
-    console.error(error);
+    console.error("erorr here:", error);
     res.status(500).json({
       message: "Internal server error",
     });

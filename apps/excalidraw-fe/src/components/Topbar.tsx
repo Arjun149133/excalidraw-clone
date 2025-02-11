@@ -30,10 +30,10 @@ const shapeButtons = [
   //   icon: EraserIcon,
   //   tool: "eraser",
   // },
-  {
-    icon: ArrowUpLeft,
-    tool: "select",
-  },
+  // {
+  //   icon: ArrowUpLeft,
+  //   tool: "select",
+  // },
 ];
 
 export default function Topbar({
@@ -44,18 +44,30 @@ export default function Topbar({
   setSelectedTool: any;
 }) {
   return (
-    <div className=" bg-gray-700 rounded-lg">
-      {shapeButtons.map((s, index) => (
+    <div className=" flex bg-gray-700 rounded-lg">
+      <div>
+        {shapeButtons.map((s, index) => (
+          <Button
+            key={index}
+            onClick={() => {
+              setSelectedTool(s.tool);
+            }}
+            className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === s.tool ? "bg-gray-500" : ""}`}
+          >
+            <s.icon />
+          </Button>
+        ))}
+      </div>
+      <div>
         <Button
-          key={index}
           onClick={() => {
-            setSelectedTool(s.tool);
+            setSelectedTool("select");
           }}
-          className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === s.tool ? "bg-gray-500" : ""}`}
+          className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === "select" ? "bg-gray-500" : ""}`}
         >
-          <s.icon />
+          select
         </Button>
-      ))}
+      </div>
     </div>
   );
 }

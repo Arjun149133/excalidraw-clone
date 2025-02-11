@@ -2,11 +2,14 @@ import { Shape } from "@/utils/types";
 import { Canvas } from "./Canvas";
 import { getExistingShapes } from "./http";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 
 export class Game extends Canvas {
   private roomId: string;
   private socket: WebSocket;
   private userId: string | null = null;
+  private chatId: string | null = null;
+  private token: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     super(canvas);
@@ -20,7 +23,6 @@ export class Game extends Canvas {
   }
 
   async init() {
-    this.clear();
     try {
       const token = localStorage.getItem("token");
       const result = await getExistingShapes(this.roomId, token!);
@@ -32,7 +34,10 @@ export class Game extends Canvas {
           // @ts-ignore
           const points = JSON.parse(shape.params.points);
           shape.params.points = points;
+          this.chatId = s.id;
         }
+
+        this.chatId = s.id;
         shapes.push(shape);
       });
       super.setExistingShapes(shapes);
@@ -43,10 +48,10 @@ export class Game extends Canvas {
     }
 
     super.init();
-    this.clear();
   }
 
   initUser() {
+    this.token = localStorage.getItem("token");
     const token = localStorage.getItem("token");
     if (token) {
       const decoded = jwt.decode(token) as any;
@@ -58,7 +63,11 @@ export class Game extends Canvas {
   initMouseHandlers(): void {
     super.initMouseHandlers();
     super.getCanvas().addEventListener("mouseup", this.handleParentMouseUp);
-    this.clear();
+  }
+
+  destroy(): void {
+    super.destroy();
+    super.getCanvas().removeEventListener("mouseup", this.handleParentMouseUp);
   }
 
   initSocketHandler() {
@@ -82,7 +91,6 @@ export class Game extends Canvas {
   }
 
   private handleParentMouseUp = (e: MouseEvent) => {
-    this.clear();
     this.handleMouseUp(e);
 
     switch (super.getSelectedTool()) {
@@ -104,7 +112,6 @@ export class Game extends Canvas {
             },
           })
         );
-        this.clear();
         break;
       case "circle":
         const { x: x1, y: y1 } = super.getStartCoordinates();
@@ -123,7 +130,6 @@ export class Game extends Canvas {
             },
           })
         );
-        this.clear();
         break;
 
       case "line":
@@ -144,8 +150,6 @@ export class Game extends Canvas {
             },
           })
         );
-
-        this.clear();
 
         break;
 
@@ -169,11 +173,36 @@ export class Game extends Canvas {
           })
         );
 
-        this.clear();
+        break;
+
+      case "select":
+        const selectedShape = super.getSelectedShape();
+        if (!selectedShape) {
+          break;
+        }
+        this.updateChatOnDb(selectedShape);
 
         break;
     }
+  };
 
-    this.clear();
+  updateChatOnDb = async (shape: Shape) => {
+    try {
+      const res = await axios.put(
+        `/chat/${this.chatId}`,
+        {
+          message: JSON.stringify(shape),
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + this.token,
+          },
+        }
+      );
+
+      console.log(res.data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 }

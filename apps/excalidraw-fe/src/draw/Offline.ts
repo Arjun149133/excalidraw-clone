@@ -36,8 +36,6 @@ export class Offline extends Canvas {
   }
 
   private handleParentMouseUp = (e: MouseEvent) => {
-    console.log("handleParentMouseUp");
-
     this.handleMouseUp(e);
     this.clear();
 
