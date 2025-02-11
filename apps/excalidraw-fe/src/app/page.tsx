@@ -29,7 +29,6 @@ export default function Dashboard() {
   }, []);
 
   const onsubmit = async (data: RoomNameForm | RoomIdForm) => {
-    console.log(data);
     if (roomAction === "create") {
       try {
         const res = await axios.post(`${HTTP_BACKEND_URL}/room/create`, data, {
@@ -38,11 +37,10 @@ export default function Dashboard() {
           },
         });
 
-        console.log(res.data);
         router.push(`/canvas/collab/${res.data.room.id}`);
         setShowRoomDialog(false);
       } catch (error) {
-        console.log(error);
+        console.error(error);
         //@ts-ignore
         setServerError(error.response.data.message);
       }
@@ -60,11 +58,10 @@ export default function Dashboard() {
           }
         );
 
-        console.log(res.data);
         router.push(`/canvas/collab/${res.data.roomId}`);
         setShowRoomDialog(false);
       } catch (error) {
-        console.log(error);
+        console.error(error);
         //@ts-ignore
         setServerError(error.response.data.message);
       }

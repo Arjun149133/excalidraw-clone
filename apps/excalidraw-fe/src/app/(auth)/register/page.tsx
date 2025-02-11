@@ -21,14 +21,11 @@ export default function Register() {
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      console.log(data);
       const res = await axios.post(`${HTTP_BACKEND_URL}/auth/register`, data);
-      console.log(res.data);
 
       if (res.status === 201) {
         router.push("/login");
       } else {
-        console.log("we are here");
         setServerError(res.data.message);
       }
     } catch (error) {

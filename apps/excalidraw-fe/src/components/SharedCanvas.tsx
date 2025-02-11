@@ -11,24 +11,34 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [game, setGame] = useState<Game>();
   const [selectedTool, setSelectedTool] = useState<Tool>("rect");
-  const windowSize = useWindowSize();
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
+  const [cursor, setCursor] = useState<"cursor-crosshair" | "cursor-move">(
+    "cursor-crosshair"
   );
+  const windowSize = useWindowSize();
+  const [token, setToken] = useState<string | null>(null);
 
   const socket = useSocket(roomId);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("token");
+    setToken(token);
+  }, []);
+
+  useEffect(() => {
     game?.setTool(selectedTool);
+    if (selectedTool === "select") {
+      setCursor("cursor-move");
+    } else {
+      setCursor("cursor-crosshair");
+    }
   }, [selectedTool]);
 
   useEffect(() => {
     if (!canvasRef.current) {
-      console.log("no canvas");
       return;
     }
     if (!socket) {
-      console.log("no socket");
       return;
     }
 
@@ -56,7 +66,11 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   return (
     <>
       <div className=" absolute top-2 left-5">
-        <Topbar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+        <Topbar
+          selectedTool={selectedTool}
+          setSelectedTool={setSelectedTool}
+          select={false}
+        />
       </div>
       <canvas
         ref={canvasRef}
@@ -66,6 +80,7 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
           width: windowSize.width,
           height: windowSize.height,
         }}
+        className={`${cursor}`}
       ></canvas>
     </>
   );

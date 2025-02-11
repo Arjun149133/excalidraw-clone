@@ -3,12 +3,12 @@ import { Canvas } from "./Canvas";
 import { getExistingShapes } from "./http";
 import jwt from "jsonwebtoken";
 import axios from "axios";
+import { HTTP_BACKEND_URL } from "@/config";
 
 export class Game extends Canvas {
   private roomId: string;
   private socket: WebSocket;
   private userId: string | null = null;
-  private chatId: string | null = null;
   private token: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
@@ -24,8 +24,12 @@ export class Game extends Canvas {
 
   async init() {
     try {
-      const token = localStorage.getItem("token");
-      const result = await getExistingShapes(this.roomId, token!);
+      this.token = localStorage.getItem("token");
+      if (!this.roomId) {
+        return;
+      }
+
+      const result = await getExistingShapes(this.roomId, this.token!);
       const { existingChats } = result;
       const shapes: Shape[] = [];
       existingChats.map((s: any) => {
@@ -34,27 +38,24 @@ export class Game extends Canvas {
           // @ts-ignore
           const points = JSON.parse(shape.params.points);
           shape.params.points = points;
-          this.chatId = s.id;
         }
-
-        this.chatId = s.id;
+        shape.chatId = s.id;
         shapes.push(shape);
       });
       super.setExistingShapes(shapes);
-
-      this.clear();
     } catch (error) {
       console.error(error);
     }
 
     super.init();
+
+    this.clear();
   }
 
   initUser() {
     this.token = localStorage.getItem("token");
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decoded = jwt.decode(token) as any;
+    if (this.token) {
+      const decoded = jwt.decode(this.token) as any;
       this.userId = decoded.userId;
     }
     this.clear();
@@ -70,13 +71,17 @@ export class Game extends Canvas {
     super.getCanvas().removeEventListener("mouseup", this.handleParentMouseUp);
   }
 
-  initSocketHandler() {
-    this.socket.onmessage = (event) => {
+  async initSocketHandler() {
+    this.socket.onmessage = async (event) => {
       const data = JSON.parse(event.data);
+
+      if (data.type === "update_chat" && this.userId !== data.userId) {
+        await this.init();
+        this.clear();
+      }
 
       if (data.type === "chat" && this.userId !== data.userId) {
         const shape: Shape = data.payload;
-        console.log("received shape", shape);
 
         if (shape.shape === "freehand") {
           // @ts-ignore
@@ -84,13 +89,18 @@ export class Game extends Canvas {
           shape.params.points = points;
         }
 
+        shape.chatId = data.chatId;
         super.setExistingShapes([...super.getExistingShapes(), shape]);
         this.clear();
+      }
+
+      if (data.type === "chat") {
+        await this.init();
       }
     };
   }
 
-  private handleParentMouseUp = (e: MouseEvent) => {
+  private handleParentMouseUp = async (e: MouseEvent) => {
     this.handleMouseUp(e);
 
     switch (super.getSelectedTool()) {
@@ -180,7 +190,22 @@ export class Game extends Canvas {
         if (!selectedShape) {
           break;
         }
-        this.updateChatOnDb(selectedShape);
+
+        if (selectedShape.shape === "freehand") {
+          // @ts-ignore
+          const points = JSON.stringify(selectedShape.params.points);
+          const newShape = { ...selectedShape, params: { points } };
+          // @ts-ignore
+          await this.updateChatOnDb(newShape);
+        } else {
+          await this.updateChatOnDb(selectedShape);
+        }
+
+        this.socket.send(
+          JSON.stringify({
+            type: "update_chat",
+          })
+        );
 
         break;
     }
@@ -188,8 +213,12 @@ export class Game extends Canvas {
 
   updateChatOnDb = async (shape: Shape) => {
     try {
+      if (!shape.chatId) {
+        return;
+      }
+
       const res = await axios.put(
-        `/chat/${this.chatId}`,
+        `${HTTP_BACKEND_URL}/chat/${shape.chatId}`,
         {
           message: JSON.stringify(shape),
         },
@@ -199,8 +228,6 @@ export class Game extends Canvas {
           },
         }
       );
-
-      console.log(res.data);
     } catch (error) {
       console.error(error);
     }

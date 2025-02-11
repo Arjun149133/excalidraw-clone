@@ -101,7 +101,7 @@ const loginHandler = async (req: Request, res: Response) => {
       token: token,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 };
 

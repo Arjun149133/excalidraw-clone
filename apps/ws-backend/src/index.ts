@@ -33,18 +33,15 @@ function findUserId(token: string): string | null {
 }
 
 wss.on("connection", async (ws, req) => {
-  console.log("Connection made");
   ws.on("error", () => {
     console.error;
   });
 
   ws.on("close", () => {
-    console.log("Connection closed");
     const userIndex = users.findIndex((u) => u.ws === ws);
     if (userIndex !== -1) {
       const user = users[userIndex];
       if (!user) return;
-      console.log("close: ", user.userId);
       user.roomIds.forEach((roomId) => {
         const room = roomMapping.get(roomId);
         if (room) {
@@ -58,34 +55,29 @@ wss.on("connection", async (ws, req) => {
 
   const url = req.url;
   if (!url) {
-    console.log("no url");
     return;
   }
 
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("token");
   if (!token) {
-    console.log("no token");
     return;
   }
 
   const roomId = queryParams.get("roomId");
   if (!roomId) {
-    console.log("no room id");
     ws.close();
     return;
   }
 
   const userId = findUserId(token);
   if (!userId) {
-    console.log("no user id");
     ws.close();
     return;
   }
 
   const userInDb = await getUser(userId);
   if (!userInDb) {
-    console.log("no user in db");
     ws.close();
     return;
   }
@@ -112,21 +104,17 @@ wss.on("connection", async (ws, req) => {
   });
 
   ws.on("message", async (message) => {
-    console.log("we are in msg");
     const data = JSON.parse(message.toString());
-    console.log("herererer: ", data);
 
     if (data.type === "chat") {
       try {
         const roomId = data.roomId;
         let room = roomMapping.get(roomId);
         if (!room) {
-          console.log("returning no room ", roomId);
           return;
         }
 
         if (!data.payload || !data.payload.shape || !data.payload.params) {
-          console.log("returning no data payload");
           return;
         }
 
@@ -138,7 +126,6 @@ wss.on("connection", async (ws, req) => {
           },
         });
 
-        console.log("created chat");
         room.forEach((u) => {
           u.ws.send(
             JSON.stringify({
@@ -156,6 +143,17 @@ wss.on("connection", async (ws, req) => {
       } catch (error) {
         console.error(error);
       }
+    }
+
+    if (data.type === "update_chat") {
+      room?.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "update_chat",
+            userId: userId,
+          })
+        );
+      });
     }
 
     if (data.type === "leave_room") {

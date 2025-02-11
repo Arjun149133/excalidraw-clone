@@ -39,9 +39,11 @@ const shapeButtons = [
 export default function Topbar({
   selectedTool,
   setSelectedTool,
+  select = true,
 }: {
   selectedTool: Tool;
   setSelectedTool: any;
+  select?: boolean;
 }) {
   return (
     <div className=" flex bg-gray-700 rounded-lg">
@@ -58,16 +60,18 @@ export default function Topbar({
           </Button>
         ))}
       </div>
-      <div>
-        <Button
-          onClick={() => {
-            setSelectedTool("select");
-          }}
-          className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === "select" ? "bg-gray-500" : ""}`}
-        >
-          select
-        </Button>
-      </div>
+      {select && (
+        <div>
+          <Button
+            onClick={() => {
+              setSelectedTool("select");
+            }}
+            className={`bg-gray-700 hover:bg-gray-600 ${selectedTool === "select" ? "bg-gray-500" : ""}`}
+          >
+            select
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

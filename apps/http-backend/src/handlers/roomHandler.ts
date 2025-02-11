@@ -99,7 +99,7 @@ export const getRoomChats = async (req: Request, res: Response) => {
       existingChats: existingChats,
     });
   } catch (error) {
-    console.error(error);
+    console.error("error:", error);
   }
 };
 

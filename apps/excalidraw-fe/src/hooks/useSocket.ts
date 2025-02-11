@@ -10,16 +10,13 @@ export const useSocket = (roomId: string) => {
     const token = localStorage.getItem("token");
 
     const ws = new WebSocket(url + `/?token=${token}&roomId=${roomId}`);
-    console.log("heelo:", roomId);
 
     ws.onopen = () => {
       setSocket(ws);
-      console.log("connection made");
     };
 
     ws.onclose = () => {
       setSocket(null);
-      console.log("connection closed");
     };
 
     return () => {

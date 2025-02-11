@@ -22,7 +22,6 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     try {
       const res = await axios.post(`${HTTP_BACKEND_URL}/auth/login`, data);
-      console.log(res);
 
       if (res.status === 200) {
         const token = res.data.token;

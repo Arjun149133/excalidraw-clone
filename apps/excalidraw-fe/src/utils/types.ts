@@ -8,6 +8,7 @@ export type Tool =
 
 export type Shape =
   | {
+      chatId?: number;
       shape: "rect";
       params: {
         startX: number;
@@ -17,6 +18,7 @@ export type Shape =
       };
     }
   | {
+      chatId?: number;
       shape: "circle";
       params: {
         startX: number;
@@ -25,6 +27,7 @@ export type Shape =
       };
     }
   | {
+      chatId?: number;
       shape: "line";
       params: {
         startX: number;
@@ -34,6 +37,7 @@ export type Shape =
       };
     }
   | {
+      chatId?: number;
       shape: "freehand";
       params: {
         points: { x: number; y: number; pressure: number }[];

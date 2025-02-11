@@ -13,6 +13,7 @@ export class Canvas {
   private rightMouseDown = false;
   private action: "resize" | "move" = "move";
   private selectedShape: Shape | null = null;
+  private changedShape: Shape | null = null;
   private selectedShapeOffSetX: number = 0;
   private selectedShapeOffSetY: number = 0;
   private panOffSetX: number = 0;
@@ -49,7 +50,7 @@ export class Canvas {
   }
 
   getSelectedShape() {
-    return this.selectedShape;
+    return this.changedShape;
   }
 
   getStartCoordinates() {
@@ -545,6 +546,7 @@ export class Canvas {
           }
         }
 
+        this.changedShape = this.selectedShape;
         this.selectedShape = null;
         break;
 
