@@ -25,6 +25,10 @@ export class Game extends Canvas {
   async init() {
     try {
       this.token = localStorage.getItem("token");
+      if (this.token === null) {
+        return;
+      }
+
       if (!this.roomId) {
         return;
       }
@@ -32,14 +36,13 @@ export class Game extends Canvas {
       const result = await getExistingShapes(this.roomId, this.token!);
       const { existingChats } = result;
       const shapes: Shape[] = [];
-      existingChats.map((s: any) => {
-        let shape: Shape = JSON.parse(s.message);
+      existingChats.map((s: { message: string; id: string }) => {
+        const shape: Shape = JSON.parse(s.message);
         if (shape.shape === "freehand") {
-          // @ts-ignore
-          const points = JSON.parse(shape.params.points);
+          const points = JSON.parse(shape.params.points as any as string);
           shape.params.points = points;
         }
-        shape.chatId = s.id;
+        shape.chatId = parseInt(s.id);
         shapes.push(shape);
       });
       super.setExistingShapes(shapes);
@@ -55,7 +58,10 @@ export class Game extends Canvas {
   initUser() {
     this.token = localStorage.getItem("token");
     if (this.token) {
-      const decoded = jwt.decode(this.token) as any;
+      const decoded = jwt.decode(this.token) as any as {
+        userId: string;
+        email: string;
+      };
       this.userId = decoded.userId;
     }
     this.clear();
@@ -84,8 +90,7 @@ export class Game extends Canvas {
         const shape: Shape = data.payload;
 
         if (shape.shape === "freehand") {
-          // @ts-ignore
-          const points = JSON.parse(shape.params.points);
+          const points = JSON.parse(shape.params.points as any as string);
           shape.params.points = points;
         }
 
@@ -192,10 +197,12 @@ export class Game extends Canvas {
         }
 
         if (selectedShape.shape === "freehand") {
-          // @ts-ignore
-          const points = JSON.stringify(selectedShape.params.points);
-          const newShape = { ...selectedShape, params: { points } };
-          // @ts-ignore
+          const points = JSON.stringify(selectedShape.params.points) as any as {
+            x: number;
+            y: number;
+            pressure: number;
+          }[];
+          const newShape: Shape = { ...selectedShape, params: { points } };
           await this.updateChatOnDb(newShape);
         } else {
           await this.updateChatOnDb(selectedShape);
@@ -217,7 +224,7 @@ export class Game extends Canvas {
         return;
       }
 
-      const res = await axios.put(
+      await axios.put(
         `${HTTP_BACKEND_URL}/chat/${shape.chatId}`,
         {
           message: JSON.stringify(shape),

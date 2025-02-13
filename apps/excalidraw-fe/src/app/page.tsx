@@ -1,13 +1,12 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Pencil, Users, LogOut, XIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { HTTP_BACKEND_URL } from "@/config";
+import LoginButtons from "@/components/LoginButtons";
 
 interface RoomNameForm {
   name: string;
@@ -39,17 +38,15 @@ export default function Dashboard() {
 
         router.push(`/canvas/collab/${res.data.room.id}`);
         setShowRoomDialog(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        //@ts-ignore
         setServerError(error.response.data.message);
       }
     }
 
-    if (roomAction === "join") {
+    if (roomAction === "join" && "roomId" in data) {
       try {
         const res = await axios.get(
-          //@ts-ignore
           `${HTTP_BACKEND_URL}/room/join/${data.roomId}`,
           {
             headers: {
@@ -60,9 +57,8 @@ export default function Dashboard() {
 
         router.push(`/canvas/collab/${res.data.roomId}`);
         setShowRoomDialog(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
-        //@ts-ignore
         setServerError(error.response.data.message);
       }
     }
@@ -238,24 +234,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-export const LoginButtons = () => {
-  const router = useRouter();
-
-  return (
-    <div className=" flex gap-5">
-      <Button
-        onClick={() => router.push("/register")}
-        className=" bg-pink-600 hover:bg-pink-500"
-      >
-        Sign Up
-      </Button>
-      <Button
-        onClick={() => router.push("/login")}
-        className=" bg-violet-600 hover:bg-violet-500"
-      >
-        Login
-      </Button>
-    </div>
-  );
-};

@@ -1,5 +1,12 @@
 import { getSvgPathFromStroke } from "@/utils/getSvgPath";
-import { Shape, Tool } from "@/utils/types";
+import {
+  CircleShape,
+  FreeHandShape,
+  LineShape,
+  RectShape,
+  Shape,
+  Tool,
+} from "@/utils/types";
 import getStroke from "perfect-freehand";
 
 export class Canvas {
@@ -99,8 +106,8 @@ export class Canvas {
 
   setScale(scale: number) {
     this.scale = scale;
-    let scaledWidth = this.canvas.width * this.scale;
-    let scaledHeight = this.canvas.height * this.scale;
+    const scaledWidth = this.canvas.width * this.scale;
+    const scaledHeight = this.canvas.height * this.scale;
     this.scaleOffSetX = (scaledWidth - this.canvas.width) / 2;
     this.scaleOffSetY = (scaledHeight - this.canvas.height) / 2;
     this.clear();
@@ -177,7 +184,7 @@ export class Canvas {
         const x = clientX;
         const y = clientY;
 
-        this.existingShapes.forEach((s, index) => {
+        this.existingShapes.forEach((s) => {
           switch (s.shape) {
             case "rect":
               const updatedParams = { ...s.params };
@@ -353,15 +360,20 @@ export class Canvas {
               const updatedParams = { ...this.selectedShape.params };
               switch (this.selectedShape.shape) {
                 case "rect":
-                  const { startX, startY } = updatedParams;
-                  updatedParams.startX = startX + clientX - this.startX;
-                  updatedParams.startY = startY + clientY - this.startY;
+                  const { startX, startY } = updatedParams as RectShape;
+                  (updatedParams as RectShape).startX =
+                    startX + clientX - this.startX;
+                  (updatedParams as RectShape).startY =
+                    startY + clientY - this.startY;
                   break;
 
                 case "circle":
-                  const { startX: cx, startY: cy } = updatedParams;
-                  updatedParams.startX = cx + clientX - this.startX;
-                  updatedParams.startY = cy + clientY - this.startY;
+                  const { startX: cx, startY: cy } =
+                    updatedParams as CircleShape;
+                  (updatedParams as CircleShape).startX =
+                    cx + clientX - this.startX;
+                  (updatedParams as CircleShape).startY =
+                    cy + clientY - this.startY;
                   break;
 
                 case "line":
@@ -370,15 +382,19 @@ export class Canvas {
                     startY: y0,
                     endX: x1,
                     endY: y1,
-                  } = updatedParams;
-                  updatedParams.startX = x0 + (clientX - this.startX);
-                  updatedParams.startY = y0 + (clientY - this.startY);
-                  updatedParams.endX = x1 + (clientX - this.startX);
-                  updatedParams.endY = y1 + (clientY - this.startY);
+                  } = updatedParams as LineShape;
+                  (updatedParams as LineShape).startX =
+                    x0 + (clientX - this.startX);
+                  (updatedParams as LineShape).startY =
+                    y0 + (clientY - this.startY);
+                  (updatedParams as LineShape).endX =
+                    x1 + (clientX - this.startX);
+                  (updatedParams as LineShape).endY =
+                    y1 + (clientY - this.startY);
                   break;
 
                 case "freehand":
-                  const { points } = updatedParams;
+                  const { points } = updatedParams as FreeHandShape;
                   points.forEach((p) => {
                     p.x += clientX - this.selectedShapeOffSetX;
                     p.y += clientY - this.selectedShapeOffSetY;
@@ -402,20 +418,22 @@ export class Canvas {
               const updatedParams = { ...this.selectedShape.params };
               switch (this.selectedShape.shape) {
                 case "rect":
-                  const { startX, startY, width, height } = updatedParams;
-                  updatedParams.width = clientX - startX;
-                  updatedParams.height = clientY - startY;
+                  const { startX, startY, width, height } =
+                    updatedParams as RectShape;
+                  (updatedParams as RectShape).width = clientX - startX;
+                  (updatedParams as RectShape).height = clientY - startY;
                   break;
 
                 case "circle":
-                  const { startX: cx, startY: cy } = updatedParams;
+                  const { startX: cx, startY: cy } =
+                    updatedParams as CircleShape;
                   const radius = this.distance(cx, cy, clientX, clientY);
-                  updatedParams.radius = radius;
+                  (updatedParams as CircleShape).radius = radius;
                   break;
 
                 case "line":
-                  updatedParams.endX = clientX;
-                  updatedParams.endY = clientY;
+                  (updatedParams as LineShape).endX = clientX;
+                  (updatedParams as LineShape).endY = clientY;
                   break;
 
                 default:
@@ -573,7 +591,7 @@ export class Canvas {
     this.clear();
   };
 
-  handleMouseLeave = (e: MouseEvent) => {
+  handleMouseLeave = () => {
     this.leftMouseDown = false;
     this.rightMouseDown = false;
     this.clear();
@@ -603,7 +621,7 @@ export class Canvas {
     this.ctx.strokeRect(x, y, width, height);
   };
 
-  renderFreehand = (points: any) => {
+  renderFreehand = (points: { x: number; y: number; pressure: number }[]) => {
     const outlinePoints = getStroke(points, {
       size: 3,
       thinning: 0.5,
@@ -725,7 +743,14 @@ export class Canvas {
     return false;
   };
 
-  updateShape = (shape: Shape, updatedParams: any) => {
+  updateShape = (
+    shape: Shape,
+    updatedParams:
+      | { startX: number; startY: number; width: number; height: number }
+      | { startX: number; startY: number; radius: number }
+      | { startX: number; startY: number; endX: number; endY: number }
+      | { points: { x: number; y: number; pressure: number }[] }
+  ) => {
     const index = this.existingShapes.findIndex((s) => s === shape);
     if (index === -1) return;
 

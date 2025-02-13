@@ -1,15 +1,14 @@
-import {
-  CircleIcon,
-  EraserIcon,
-  PenLineIcon,
-  RectangleHorizontalIcon,
-  ArrowUpLeft,
-} from "lucide-react";
+import { CircleIcon, PenLineIcon, RectangleHorizontalIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tool } from "@/utils/types";
 import DashLine from "@/icons/DashLine";
 
-const shapeButtons = [
+interface ShapeButton {
+  icon: any;
+  tool: Tool;
+}
+
+const shapeButtons: ShapeButton[] = [
   {
     icon: RectangleHorizontalIcon,
     tool: "rect",
@@ -42,7 +41,7 @@ export default function Topbar({
   select = true,
 }: {
   selectedTool: Tool;
-  setSelectedTool: any;
+  setSelectedTool: (tool: Tool) => void;
   select?: boolean;
 }) {
   return (

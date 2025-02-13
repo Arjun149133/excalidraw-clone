@@ -110,7 +110,7 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center text-gray-400">
-            Don't have an account?{" "}
+            Dont have an account?{" "}
             <button
               onClick={() => router.push("/register")}
               className="text-purple-400 hover:text-purple-300 font-medium"

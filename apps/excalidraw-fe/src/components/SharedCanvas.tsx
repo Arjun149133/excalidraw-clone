@@ -5,7 +5,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
-import { LoginButtons } from "@/app/page";
+import LoginButtons from "@/components/LoginButtons";
 
 const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

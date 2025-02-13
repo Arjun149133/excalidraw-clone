@@ -28,8 +28,7 @@ export default function Register() {
       } else {
         setServerError(res.data.message);
       }
-    } catch (error) {
-      //@ts-ignore
+    } catch (error: any) {
       setServerError(error.response.data.message);
     }
   };
