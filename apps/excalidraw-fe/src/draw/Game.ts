@@ -3,7 +3,6 @@ import { Canvas } from "./Canvas";
 import { getExistingShapes } from "./http";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-import { HTTP_BACKEND_URL } from "@/config";
 
 export class Game extends Canvas {
   private roomId: string;
@@ -225,7 +224,7 @@ export class Game extends Canvas {
       }
 
       await axios.put(
-        `${HTTP_BACKEND_URL}/chat/${shape.chatId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/${shape.chatId}`,
         {
           message: JSON.stringify(shape),
         },

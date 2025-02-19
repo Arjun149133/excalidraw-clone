@@ -5,7 +5,12 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "dev:docker": "cd packages/db && npx prisma migrate dev && npm run dev",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "generate:db": "cd packages/db && npx prisma generate",
+    "start:be": "cd apps/http-backend && pnpm run start",
+    "start:ws": "cd apps/ws-backend && pnpm run start",
+    "start:fe": "cd apps/excalidraw-fe && pnpm run start"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

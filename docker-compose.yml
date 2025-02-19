@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.fe 
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - websocket
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+      - NEXT_PUBLIC_WS_URL=ws://websocket:8080
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.be 
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - PORT=5000
+
+  websocket:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.ws
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - PORT=8080
+
+  postgres:
+    image: postgres:alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/pgdata
+
+volumes:
+  postgres_data:

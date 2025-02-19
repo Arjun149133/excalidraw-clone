@@ -1,6 +1,7 @@
 {
   "name": "@repo/db",
   "version": "1.0.0",
+  "main": "index.js",
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate"
