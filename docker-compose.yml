@@ -1,11 +1,8 @@
-# docker-compose.yml
-version: '3.8'
-
 services:
   frontend:
     build:
       context: .
-      dockerfile: apps/excalidraw-fe/Dockerfile
+      dockerfile: ./docker/Dockerfile.fe 
     ports:
       - "3000:3000"
     depends_on:
@@ -18,7 +15,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: apps/http-backend/Dockerfile
+      dockerfile: ./docker/Dockerfile.be 
     ports:
       - "5000:5000"
     depends_on:
@@ -30,7 +27,7 @@ services:
   websocket:
     build:
       context: .
-      dockerfile: apps/ws-backend/Dockerfile
+      dockerfile: ./docker/Dockerfile.ws
     ports:
       - "8080:8080"
     depends_on:
@@ -40,7 +37,7 @@ services:
       - PORT=8080
 
   postgres:
-    image: postgres:14
+    image: postgres:alpine
     ports:
       - "5432:5432"
     environment:
@@ -48,7 +45,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/pgdata
 
 volumes:
   postgres_data:
