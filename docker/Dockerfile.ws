@@ -15,5 +15,7 @@ RUN pnpm install
 RUN pnpm run generate:db
 RUN pnpm build
 
+EXPOSE 8080
+
 CMD ["pnpm", "run", "start:ws"]
 

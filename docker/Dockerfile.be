@@ -15,5 +15,7 @@ RUN pnpm install
 RUN pnpm run generate:db
 RUN pnpm build
 
+EXPOSE 5000
+
 CMD ["pnpm", "run", "start:be"]
 
