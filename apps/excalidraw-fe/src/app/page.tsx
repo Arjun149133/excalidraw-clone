@@ -6,6 +6,7 @@ import { Pencil, Users, LogOut, XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import LoginButtons from "@/components/LoginButtons";
+import { BACKEND_URL } from "@/lib/config";
 
 interface RoomNameForm {
   name: string;
@@ -29,15 +30,11 @@ export default function Dashboard() {
   const onsubmit = async (data: RoomNameForm | RoomIdForm) => {
     if (roomAction === "create") {
       try {
-        const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/room/create`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await axios.post(`${BACKEND_URL}/room/create`, data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         router.push(`/canvas/collab/${res.data.room.id}`);
         setShowRoomDialog(false);
@@ -49,14 +46,11 @@ export default function Dashboard() {
 
     if (roomAction === "join" && "roomId" in data) {
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/room/join/${data.roomId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await axios.get(`${BACKEND_URL}/room/join/${data.roomId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         router.push(`/canvas/collab/${res.data.roomId}`);
         setShowRoomDialog(false);

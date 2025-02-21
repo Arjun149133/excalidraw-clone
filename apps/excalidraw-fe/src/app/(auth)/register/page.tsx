@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, User, Mail, Lock } from "lucide-react";
 import axios from "axios";
+import { BACKEND_URL } from "@/lib/config";
 
 interface RegisterForm {
   name: string;
@@ -20,10 +21,7 @@ export default function Register() {
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        data
-      );
+      const res = await axios.post(`${BACKEND_URL}/auth/register`, data);
 
       if (res.status === 201) {
         router.push("/login");

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, Mail, Lock } from "lucide-react";
 import axios from "axios";
+import { BACKEND_URL } from "@/lib/config";
 
 interface LoginForm {
   email: string;
@@ -20,10 +21,7 @@ export default function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        data
-      );
+      const res = await axios.post(`${BACKEND_URL}/auth/login`, data);
 
       if (res.status === 200) {
         const token = res.data.token;

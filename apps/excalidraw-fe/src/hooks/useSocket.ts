@@ -1,3 +1,4 @@
+import { WS_URL } from "@/lib/config";
 import { useEffect, useState } from "react";
 
 export const useSocket = (roomId: string) => {
@@ -7,9 +8,7 @@ export const useSocket = (roomId: string) => {
     if (socket) return;
     const token = localStorage.getItem("token");
 
-    const ws = new WebSocket(
-      process.env.NEXT_PUBLIC_WS_URL + `/?token=${token}&roomId=${roomId}`
-    );
+    const ws = new WebSocket(WS_URL + `/?token=${token}&roomId=${roomId}`);
 
     ws.onopen = () => {
       setSocket(ws);
