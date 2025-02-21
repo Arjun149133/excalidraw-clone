@@ -26,3 +26,7 @@ jobs:
           file: ./docker/Dockerfile.fe
           push: true
           tags: arjunyadav17/excalidraw-fe:${{ github.sha }}
+      - run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          chmod 700 /home/runner/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key root@54.161.214.83 -t "docker pull arjunyadav17/excalidraw-fe:${{ github.sha }} && docker stop excalidraw-fe && docker run --name excalidraw-fe -d -p 3000:3000 arjunyadav17/excalidraw-fe:${{ github.sha }}"
