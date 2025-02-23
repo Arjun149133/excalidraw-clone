@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import LoginButtons from "@/components/LoginButtons";
 import { BACKEND_URL } from "@/lib/config";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface RoomNameForm {
   name: string;
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [token, setToken] = useState<string | null>(null);
   const { register, handleSubmit } = useForm<RoomNameForm | RoomIdForm>();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setToken(localStorage.getItem("token"));
@@ -30,15 +32,18 @@ export default function Dashboard() {
   const onsubmit = async (data: RoomNameForm | RoomIdForm) => {
     if (roomAction === "create") {
       try {
+        setLoading(true);
         const res = await axios.post(`${BACKEND_URL}/room/create`, data, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
+        setLoading(false);
         router.push(`/canvas/collab/${res.data.room.id}`);
         setShowRoomDialog(false);
       } catch (error: any) {
+        setLoading(false);
         console.error(error);
         setServerError(error.response.data.message);
       }
@@ -46,15 +51,18 @@ export default function Dashboard() {
 
     if (roomAction === "join" && "roomId" in data) {
       try {
+        setLoading(true);
         const res = await axios.get(`${BACKEND_URL}/room/join/${data.roomId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
+        setLoading(false);
         router.push(`/canvas/collab/${res.data.roomId}`);
         setShowRoomDialog(false);
       } catch (error: any) {
+        setLoading(false);
         console.error(error);
         setServerError(error.response.data.message);
       }
@@ -208,8 +216,23 @@ export default function Dashboard() {
                   <button
                     type="submit"
                     className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors"
+                    disabled={loading}
                   >
-                    {roomAction === "create" ? "Create" : "Join"}
+                    {roomAction === "create" ? (
+                      !loading ? (
+                        "Create"
+                      ) : (
+                        <div className=" w-full flex items-center justify-center">
+                          <LoadingSpinner />
+                        </div>
+                      )
+                    ) : !loading ? (
+                      "Join"
+                    ) : (
+                      <div className=" w-full flex items-center justify-center">
+                        <LoadingSpinner />
+                      </div>
+                    )}
                   </button>
                   <button
                     onClick={() => setRoomAction(null)}

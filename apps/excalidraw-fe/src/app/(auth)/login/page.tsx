@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, Mail, Lock } from "lucide-react";
 import axios from "axios";
 import { BACKEND_URL } from "@/lib/config";
+import { GuestLoginButton } from "@/components/GuestLogin";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface LoginForm {
   email: string;
@@ -16,19 +18,23 @@ interface LoginForm {
 export default function Login() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginForm>();
-  const [isMounted, setIsMounted] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      setLoading(true);
       const res = await axios.post(`${BACKEND_URL}/auth/login`, data);
 
+      setLoading(false);
       if (res.status === 200) {
         const token = res.data.token;
         localStorage.setItem("token", token);
         router.push("/");
       }
     } catch (error: any) {
+      setLoading(false);
       console.error(error);
       setServerError(error.response.data.message);
     }
@@ -97,9 +103,10 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold transition-colors"
+                className="w-full flex justify-center items-center bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold transition-colors"
+                disabled={loading}
               >
-                Sign In
+                {!loading ? "Sign In" : <LoadingSpinner />}
               </button>
               {serverError && (
                 <div className="text-center text-red-400 mt-2">
@@ -108,6 +115,8 @@ export default function Login() {
               )}
             </div>
           </form>
+
+          <GuestLoginButton setLoading={setLoading} />
 
           <div className="mt-6 text-center text-gray-400">
             Dont have an account?{" "}

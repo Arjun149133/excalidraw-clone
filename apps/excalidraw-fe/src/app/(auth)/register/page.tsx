@@ -1,11 +1,13 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { Pencil, User, Mail, Lock } from "lucide-react";
 import axios from "axios";
 import { BACKEND_URL } from "@/lib/config";
+import { GuestLoginButton } from "@/components/GuestLogin";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface RegisterForm {
   name: string;
@@ -16,19 +18,23 @@ interface RegisterForm {
 export default function Register() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<RegisterForm>();
-  const [isMounted, setIsMounted] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data: RegisterForm) => {
     try {
+      setLoading(true);
       const res = await axios.post(`${BACKEND_URL}/auth/register`, data);
 
+      setLoading(false);
       if (res.status === 201) {
         router.push("/login");
       } else {
         setServerError(res.data.message);
       }
     } catch (error: any) {
+      setLoading(false);
       setServerError(error.response.data.message);
     }
   };
@@ -112,9 +118,10 @@ export default function Register() {
             <div className="pt-4">
               <button
                 type="submit"
-                className="w-full bg-pink-600 hover:bg-pink-700 py-3 rounded-lg font-semibold transition-colors "
+                className="w-full flex justify-center items-center bg-pink-600 hover:bg-pink-700 py-3 rounded-lg font-semibold transition-colors "
+                disabled={loading}
               >
-                Create Account
+                {!loading ? "Create Account" : <LoadingSpinner />}
               </button>
               {serverError && (
                 <p className="text-red-500 text-sm mt-2 w-full flex justify-center">
@@ -124,7 +131,9 @@ export default function Register() {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-gray-400">
+          <GuestLoginButton setLoading={setLoading} />
+
+          <div className="mt-3 text-center text-gray-400">
             Already have an account?{" "}
             <button
               onClick={() => router.push("/login")}

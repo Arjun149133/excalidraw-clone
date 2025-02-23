@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import LoginButtons from "@/components/LoginButtons";
+import RoomCode from "./RoomCode";
 
 const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,6 +72,9 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
           setSelectedTool={setSelectedTool}
           select={false}
         />
+      </div>
+      <div className=" absolute top-3 right-7">
+        <RoomCode roomId={roomId} />
       </div>
       <canvas
         ref={canvasRef}
