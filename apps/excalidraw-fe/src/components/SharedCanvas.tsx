@@ -7,6 +7,7 @@ import Topbar from "./Topbar";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import LoginButtons from "@/components/LoginButtons";
 import RoomCode from "./RoomCode";
+import LoadingSpinner from "./LoadingSpinner";
 
 const SharedCanvas = ({ roomId }: { roomId: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,13 +18,16 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
   );
   const windowSize = useWindowSize();
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const socket = useSocket(roomId);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setLoading(true);
     const token = localStorage.getItem("token");
     setToken(token);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -51,8 +55,15 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
     };
   }, [canvasRef.current, socket, windowSize]);
 
-  if (!socket) {
-    <div className=" bg-black">connecting to server...</div>;
+  if (loading) {
+    return (
+      <div className=" flex flex-col w-screen h-screen justify-center items-center">
+        <div className=" text-white mb-2">
+          <span>Connecting to server</span>
+        </div>
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (!token) {
@@ -64,13 +75,17 @@ const SharedCanvas = ({ roomId }: { roomId: string }) => {
     );
   }
 
+  if (!socket) {
+    return null;
+  }
+
   return (
     <>
       <div className=" absolute top-2 left-5">
         <Topbar
           selectedTool={selectedTool}
           setSelectedTool={setSelectedTool}
-          select={false}
+          select={true}
         />
       </div>
       <div className=" absolute top-3 right-7">
