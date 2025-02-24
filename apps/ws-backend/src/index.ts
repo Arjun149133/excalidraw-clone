@@ -146,14 +146,46 @@ wss.on("connection", async (ws, req) => {
     }
 
     if (data.type === "update_chat") {
-      room?.forEach((u) => {
-        u.ws.send(
-          JSON.stringify({
-            type: "update_chat",
-            userId: userId,
-          })
-        );
-      });
+      const shape = JSON.parse(data.params.shape);
+      try {
+        if (!shape.chatId) {
+          return;
+        }
+
+        const chat = await db.chat.findFirst({
+          where: {
+            id: parseInt(shape.chatId),
+          },
+        });
+
+        if (!chat) {
+          console.error("no chat found");
+          return;
+        }
+
+        await db.chat.update({
+          where: {
+            id: parseInt(shape.chatId),
+          },
+          data: {
+            message: JSON.stringify({
+              shape: shape.shape,
+              params: shape.params,
+            }),
+          },
+        });
+
+        room?.forEach((u) => {
+          u.ws.send(
+            JSON.stringify({
+              type: "update_chat",
+              userId: userId,
+            })
+          );
+        });
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     if (data.type === "leave_room") {

@@ -29,4 +29,4 @@ jobs:
       - run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
           chmod 700 /home/runner/ssh_key
-          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@54.161.214.83 -t "docker pull arjunyadav17/excalidraw-ws:${{ github.sha }} && docker kill excalidraw-ws && docker rm excalidraw-ws && docker run --name excalidraw-ws -d -e DATABASE_URL=${{ secrets.DATABASE_URL }} -p 8080:8080 arjunyadav17/excalidraw-ws:${{ github.sha }}"
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@54.161.214.83 -t "docker pull arjunyadav17/excalidraw-ws:${{ github.sha }} && docker kill excalidraw-ws && docker rm excalidraw-ws && docker run --name excalidraw-ws --restart unless-stopped -d -e DATABASE_URL=${{ secrets.DATABASE_URL }} -p 8080:8080 arjunyadav17/excalidraw-ws:${{ github.sha }}"

@@ -2,8 +2,6 @@ import { Shape } from "@/utils/types";
 import { Canvas } from "./Canvas";
 import { getExistingShapes } from "./http";
 import jwt from "jsonwebtoken";
-import axios from "axios";
-import { BACKEND_URL } from "@/lib/config";
 
 export class Game extends Canvas {
   private roomId: string;
@@ -81,9 +79,8 @@ export class Game extends Canvas {
     this.socket.onmessage = async (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === "update_chat" && this.userId !== data.userId) {
+      if (data.type === "update_chat") {
         await this.init();
-        this.clear();
       }
 
       if (data.type === "chat" && this.userId !== data.userId) {
@@ -203,40 +200,26 @@ export class Game extends Canvas {
             pressure: number;
           }[];
           const newShape: Shape = { ...selectedShape, params: { points } };
-          await this.updateChatOnDb(newShape);
+          this.socket.send(
+            JSON.stringify({
+              type: "update_chat",
+              params: {
+                shape: JSON.stringify(newShape),
+              },
+            })
+          );
         } else {
-          await this.updateChatOnDb(selectedShape);
+          this.socket.send(
+            JSON.stringify({
+              type: "update_chat",
+              params: {
+                shape: JSON.stringify(selectedShape),
+              },
+            })
+          );
         }
-
-        this.socket.send(
-          JSON.stringify({
-            type: "update_chat",
-          })
-        );
 
         break;
-    }
-  };
-
-  updateChatOnDb = async (shape: Shape) => {
-    try {
-      if (!shape.chatId) {
-        return;
-      }
-
-      await axios.put(
-        `${BACKEND_URL}/chat/${shape.chatId}`,
-        {
-          message: JSON.stringify(shape),
-        },
-        {
-          headers: {
-            Authorization: "Bearer " + this.token,
-          },
-        }
-      );
-    } catch (error) {
-      console.error(error);
     }
   };
 }

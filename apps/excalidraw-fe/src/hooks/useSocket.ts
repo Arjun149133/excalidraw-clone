@@ -7,6 +7,7 @@ export const useSocket = (roomId: string) => {
   useEffect(() => {
     if (socket) return;
     const token = localStorage.getItem("token");
+    if (!token) return;
 
     const ws = new WebSocket(WS_URL + `/?token=${token}&roomId=${roomId}`);
 
